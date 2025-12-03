@@ -19,10 +19,10 @@ def load_gsm8k(split: str = "test", cache_dir: Optional[str] = None) -> Iterable
 
 
 def load_gpqa_diamond(split: str = "test", cache_dir: Optional[str] = None) -> Iterable[Dict]:
-    ds = load_dataset("Idavidrein/gpqa", "gpqa_diamond", split=split, cache_dir=cache_dir)
+    ds = load_dataset("fingertap/GPQA-Diamond", split=split, cache_dir=cache_dir)
     for item in ds:
-        question = item["Question"].strip()
-        answer = item["Correct Answer"].strip()
+        question = item["question"].strip()
+        answer = item["answer"].strip()
         gold = normalize_answer(answer)
         yield {
             "question": question,
