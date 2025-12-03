@@ -28,7 +28,6 @@ class TextMASMethod:
         self.agents = default_agents()
         self.args = args
         self.method_name = "text_mas"
-        self.task = args.task
         
     def run_batch(self, items: List[Dict]) -> List[Dict]:
         if len(items) > self.generate_bs:
@@ -69,21 +68,13 @@ class TextMASMethod:
                 batch_messages, add_generation_prompt=True
             )
 
-            if self.model.use_vllm:
-                generated_texts = self.model.vllm_generate_text_batch(
-                    prompts,
-                    max_new_tokens=self.max_new_tokens_each,
-                    temperature=self.temperature,
-                    top_p=self.top_p,
-                )
-            else:
-                generated_texts, _ = self.model.generate_text_batch(
-                    input_ids,
-                    attention_mask,
-                    max_new_tokens=self.max_new_tokens_each,
-                    temperature=self.temperature,
-                    top_p=self.top_p,
-                )
+            generated_texts, _ = self.model.generate_text_batch(
+                input_ids,
+                attention_mask,
+                max_new_tokens=self.max_new_tokens_each,
+                temperature=self.temperature,
+                top_p=self.top_p,
+            )
 
             agent_name_map_for_prompt_hierarchical = {
                 "Planner": "Math Agent",
@@ -128,39 +119,9 @@ class TextMASMethod:
         results: List[Dict] = []
         for idx, item in enumerate(items):
             final_text = final_texts[idx]
-            
-            if self.task in ['mbppplus', 'humanevalplus']:
-                pred = extract_markdown_python_block(final_text)
-                gold = item.get("gold", "")
-
-                if pred is None:
-                    ok = False
-                    error_msg = "python error: No python code block found"
-                else:
-                    python_code_to_exe = pred + "\n" + gold
-                    ok, error_msg = run_with_timeout(python_code_to_exe, timeout=10)
-    
-                print(f'=========================================')
-                print(f'Question {idx}')
-                print(f'error_msg: {error_msg}')
-
-            elif self.task in ["aime2024", "aime2025"]:
-                pred = normalize_answer(extract_gsm8k_answer(final_text))
-                gold = str(item.get("gold", "")).strip()
-                try:
-                    pred_int = int(pred)
-                    gold_int = int(gold)
-                    ok = (pred_int == gold_int)
-                    error_msg = None
-                except ValueError:
-                    ok = False
-                    error_msg = f'Value error in parsing answer. Pred: {pred}, Gold: {gold}'
-
-            else:
-                pred = normalize_answer(extract_gsm8k_answer(final_text))
-                gold = item.get("gold", "")
-                ok = (pred == gold) if (pred and gold) else False
-                error_msg = None
+            pred = normalize_answer(extract_gsm8k_answer(final_text))
+            gold = item.get("gold", "")
+            ok = (pred == gold) if (pred and gold) else False
 
             results.append(
                 {
