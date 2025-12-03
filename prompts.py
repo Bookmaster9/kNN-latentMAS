@@ -46,35 +46,7 @@ Now, output your refined plan below:
 """
     
     elif role == "judger":
-        if args.task in ['gsm8k', 'aime2024', 'aime2025']:
-            user_prompt = f"""
-Target Question: {question}
-
-You are a helpful assistant. You are provided with latent information for reference and a target question to solve. 
-
-The latent information might contain irrelevant contents. Ignore it if it is not helpful for solving the target question.
-
-You must reason step-by-step to solve the provided Target Question without outputting other irrelevant information.
-
-Now, reason step by step and output the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-"""
-        
-        elif args.task in ["arc_easy", "arc_challenge", "gpqa", 'medqa']:
-            user_prompt = f"""
-Target Question: {question}
-
-You are a helpful assistant. You are provided with latent information for reference and a target question to solve. 
-
-The latent information might contain irrelevant contents. Ignore it if it is not helpful for solving the target question.
-
-You must reason step-by-step to solve the provided Target Question without outputting other irrelevant information.
-Your final answer must be selected from A,B,C,D. For example \\boxed{{A}}. Do not add any other contents inside the box.
-
-Now, reason step by step and output the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-"""
-
-        elif args.task in ["mbppplus", "humanevalplus"]:
-            user_prompt = f"""
+        user_prompt = f"""
 Target Question: {question}
 
 You are a helpful assistant. You are provided with latent information for reference and a target question to solve.
@@ -82,32 +54,9 @@ You are a helpful assistant. You are provided with latent information for refere
 The latent information might contain irrelevant contents. Ignore it if it is not helpful for solving the target question.
 
 You must reason step-by-step to solve the provided Target Question without outputting other irrelevant information.
-You must put all python code as self-contained Python function in markdown code blocks. For example ```python
-import math
-def add(a, b):
-    return a + b```. Do not add any other contents inside the markdown code block.
-
-Now, reason step by step and output the final answer inside ```python
-YOUR_PYTHON_CODE
-```.
-"""
-
-        elif args.task in ["winogrande"]:
-            user_prompt = f"""
-Target Question: {question}
-
-You are a helpful assistant. You are provided with latent information for reference and a target question to solve. 
-
-The latent information might contain irrelevant contents. Ignore it if it is not helpful for solving the target question.
-
-You must reason step-by-step to solve the provided Target Question without outputting other irrelevant information.
-Your final answer must be selected from 1 and 2. For example \\boxed{{1}} or \\boxed{{2}}. Do not add any other contents inside the box.
 
 Now, reason step by step and output the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
 """
-
-        else: 
-            raise NotImplementedError(f"Task {args.task} not implemented in v5 judger prompt.")
         
     return [
         {"role": "system", "content": system_message},
@@ -122,7 +71,7 @@ def build_agent_message_hierarchical_latent_mas(role: str, question: str, contex
     assert method in ["latent_mas"], "this prompt only for latent_mas method"
     assert "qwen" in args.model_name.lower(), "this prompt only for qwen models"
 
-    if args.task in ['gsm8k', 'aime2024', 'aime2025']:
+    if True:  # Simplified to only support GSM8K
         if role == "planner":
             user_content = f"""
 You are a math agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
@@ -152,180 +101,6 @@ Your response:
         elif role == "judger":
             user_content = f"""
 You are a task summarizer. Given the input question and responses from previous agents as reference, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-
-Input Question: {question}
-
-Your response:
-"""
-
-    elif args.task in ["arc_easy", "arc_challenge", "gpqa", "medqa"]:
-
-        if args.task == "medqa":
-
-            if role == "planner":
-                user_content = f"""
-You are a math agent. Given the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-Your final answer must be selected from A,B,C,D. 
-
-Input Question: {question}
-
-Your response:
-"""
-            elif role == "critic":
-                user_content = f"""
-You are a science agent. Given the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-Your final answer must be selected from A,B,C,D. 
-
-Input Question: {question}     
-
-Your response:
-"""
-            elif role == "refiner":
-                user_content = f"""
-You are a code agent. Given the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-Your final answer must be selected from A,B,C,D. 
-
-Input Question: {question}
-
-Your response:       
-"""
-            elif role == "judger":
-
-                user_content = f"""
-You are a task summarizer. Given the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-Your final answer must be selected from A,B,C,D. 
-
-Input Question: {question}
-
-Your response:
-"""
-
-        else:
-            if role == "planner":
-                user_content = f"""
-You are a math agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-Your final answer must be selected from A,B,C,D. For example \\boxed{{A}}. Do not add any other contents inside the box.
-
-Input Question: {question}
-
-Your response:
-"""
-    
-            elif role == "critic":
-                user_content = f"""
-You are a science agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-Your final answer must be selected from A,B,C,D. For example \\boxed{{A}}. Do not add any other contents inside the box.
-
-Input Question: {question}     
-
-Your response:
-"""
-    
-            elif role == "refiner":
-                user_content = f"""
-You are a code agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-Your final answer must be selected from A,B,C,D. For example \\boxed{{A}}. Do not add any other contents inside the box.
-
-Input Question: {question}
-
-Your response:       
-"""
-            elif role == "judger":
-
-                user_content = f"""
-You are a task summarizer. Given the input question and responses from previous agents as reference, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-Your final answer must be selected from A,B,C,D. For example \\boxed{{A}}. Do not add any other contents inside the box.
-
-Input Question: {question}
-
-Your response:
-"""
-
-    elif args.task in ["mbppplus", "humanevalplus"]:
-        
-        if role == "planner":
-            user_content = f"""
-You are a math agent. Given the input question, reason step by step: please provide an efficient and self-contained Python function that solves the following problem in a markdown code block:\n```\nYOUR_PYTHON_CODE\n```.
-You must put all python code as self-contained Python function in markdown code blocks. For example ```python
-import math
-def add(a, b):
-    return a + b```. Do not add any other contents inside the markdown code block. 
-
-Input Question: {question}
-
-Your response:
-"""
-        elif role == "critic":
-            user_content = f"""
-You are a science agent. Given the input question, reason step by step: please provide an efficient and self-contained Python function that solves the following problem in a markdown code block:\n```\nYOUR_PYTHON_CODE\n```.
-You must put all python code as self-contained Python function in markdown code blocks. For example ```python
-import math
-def add(a, b):
-    return a + b```. Do not add any other contents inside the markdown code block. 
-
-Input Question: {question}
-
-Your response:
-"""
-        elif role == "refiner":
-            user_content = f"""
-You are a code agent. Given the input question, reason step by step: please provide an efficient and self-contained Python function that solves the following problem in a markdown code block:\n```\nYOUR_PYTHON_CODE\n```.
-You must put all python code as self-contained Python function in markdown code blocks. For example ```python
-import math
-def add(a, b):
-    return a + b```. Do not add any other contents inside the markdown code block. 
-
-Input Question: {question}
-
-Your response:       
-"""
-        elif role == "judger":
-            user_content = f"""
-You are a task summarizer. Given the input question and responses from previous agents as reference, reason step by step: please provide an efficient and self-contained Python function that solves the following problem in a markdown code block:\n```\nYOUR_PYTHON_CODE\n```.
-You must put all python code as self-contained Python function in markdown code blocks. For example ```python
-import needed_library
-def FUNC_NAME(a, b):
-    return a + b```. Do not add any other contents inside the markdown code block. 
-    
-Input Question: {question}
-
-Your response:
-"""
-
-    elif args.task in ["winogrande"]:
-        if role == "planner":
-            user_content = f"""
-You are a math agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-"Your final answer must be selected from 1 and 2. For example \\boxed{{1}} or \\boxed{{2}}. Do not add any other contents inside the box."
-
-Input Question: {question}
-
-Your response:
-"""
-    
-        elif role == "critic":
-            user_content = f"""
-You are a science agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-"Your final answer must be selected from 1 and 2. For example \\boxed{{1}} or \\boxed{{2}}. Do not add any other contents inside the box."
-
-Input Question: {question}     
-
-Your response:
-"""
-    
-        elif role == "refiner":
-            user_content = f"""
-You are a code agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-"Your final answer must be selected from 1 and 2. For example \\boxed{{1}} or \\boxed{{2}}. Do not add any other contents inside the box."
-
-Input Question: {question}
-
-Your response:       
-"""
-        elif role == "judger":
-            user_content = f"""
-You are a task summarizer. Given the input question and responses from previous agents as reference, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-"Your final answer must be selected from 1 and 2. For example \\boxed{{1}} or \\boxed{{2}}. Do not add any other contents inside the box."
 
 Input Question: {question}
 
@@ -409,10 +184,7 @@ Now, output your refined plan below:
 """
 
     elif role == "judger":
-        task = getattr(args, "task", None)
-
-        if task in ["gsm8k", "aime2024", "aime2025"]:
-            user_content = f"""
+        user_content = f"""
 Target Question: {question}
 
 You are the final solver agent in a sequential multi-agent system (planner -> critic -> refiner -> solver).
@@ -426,80 +198,6 @@ The plan might contain irrelevant or incorrect contents. Ignore them if they are
 You must reason step-by-step to solve the **provided Target Question** without outputting other irrelevant information.
 
 Now, reason step by step and output the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-"""
-
-        elif task in ["arc_easy", "arc_challenge", "gpqa", "medqa"]:
-            user_content = f"""
-Target Question: {question}
-
-You are the final solver agent in a sequential multi-agent system (planner -> critic -> refiner -> solver).
-You are provided with the Refiner Agent's plan as reference.
-
-Refined Plan from Previous Agents:
-{ctx}
-
-The plan might contain irrelevant or incorrect contents. Ignore them if they are not helpful for solving the target question.
-
-You must reason step-by-step to solve the **provided Target Question** without outputting other irrelevant information.
-Your final answer must be selected from A,B,C,D. For example \\boxed{{A}}. Do not add any other contents inside the box.
-
-Now, reason step by step and output the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-"""
-
-        elif task in ["mbppplus", "humanevalplus"]:
-            user_content = f"""
-Target Question: {question}
-
-You are the final solver agent in a sequential multi-agent system (planner -> critic -> refiner -> solver).
-You are provided with the Refiner Agent's plan as reference.
-
-Refined Plan from Previous Agents:
-{ctx}
-
-The plan might contain irrelevant or incorrect contents. Ignore them if they are not helpful for solving the target question.
-
-You must reason step-by-step to solve the **provided Target Question** without outputting other irrelevant information.
-You must put all python code as self-contained Python function(s) in markdown code blocks. For example:
-```python
-import math
-def add(a, b):
-    return a + b
-```
-Do not add any other contents inside the markdown code block.
-"""
-            
-        elif task in ["winogrande"]:
-            user_content = f"""
-Target Question: {question}
-
-You are the final solver agent in a sequential multi-agent system (planner -> critic -> refiner -> solver).
-You are provided with the Refiner Agent's plan as reference.
-
-Refined Plan from Previous Agents:
-{ctx}
-
-The plan might contain irrelevant or incorrect contents. Ignore them if they are not helpful for solving the target question.
-
-You must reason step-by-step to solve the **provided Target Question** without outputting other irrelevant information.
-Your final answer must be selected from 1 and 2. For example \\boxed{{1}} or \\boxed{{2}}. Do not add any other contents inside the box.
-
-Now, reason step by step and output the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-"""
-        else:
-            user_content = f"""
-Target Question: {question}
-
-You are the final solver agent in a sequential multi-agent system (planner -> critic -> refiner -> solver).
-You are provided with the Refiner Agent's plan as reference.
-
-Refined Plan from Previous Agents:
-{ctx}
-
-The plan might contain irrelevant or incorrect contents. Ignore them if they are not helpful for solving the target question.
-
-You must reason step-by-step to solve the **provided Target Question** without outputting other irrelevant information.
-
-Now, reason step by step and present your final answer clearly at the end.
 """
 
     return [
@@ -511,11 +209,11 @@ Now, reason step by step and present your final answer clearly at the end.
 def build_agent_messages_hierarchical_text_mas(role: str, question: str, context: str = "", method=None, args=None):
 
     system_message = "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
-    
+
     assert method in ["text_mas"], "this prompt only for text_mas method"
     assert "qwen" in args.model_name.lower(), "this prompt only for qwen models"
-    
-    if args.task in ['gsm8k', 'aime2024', 'aime2025']:
+
+    if True:  # Simplified to only support GSM8K
         if role == "planner":
             user_content = f"""
 You are a math agent. Given the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
@@ -548,137 +246,6 @@ You are a task summarizer. Given the final answer inside \\boxed{{YOUR_FINAL_ANS
 
 Content from Previous Agent:
 {context[:args.text_mas_context_length]}
-
-Input Question: {question}
-
-Your response:
-"""
-
-    elif args.task in ["arc_easy", "arc_challenge", "gpqa", "medqa"]:
-        if role == "planner":
-            user_content = f"""
-You are a math agent. Given the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-
-Input Question: {question}
-
-Your response:
-"""
-    
-        elif role == "critic":
-            user_content = f"""
-You are a science agent. Given the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-
-Input Question: {question}     
-
-Your response:
-"""
-    
-        elif role == "refiner":
-            user_content = f"""
-You are a code agent. Given the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-
-Input Question: {question}
-
-Your response:       
-"""
-        elif role == "judger":
-
-            user_content = f"""
-You are a task summarizer. Given the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-
-Content from Previous Agent:
-{context[:args.text_mas_context_length]}
-
-Input Question: {question}
-
-Your response:
-"""
-
-    elif args.task in ["mbppplus", "humanevalplus"]:
-        
-        if role == "planner":
-            user_content = f"""
-You are a math agent. You must put all python code as self-contained Python function in markdown code blocks. For example ```python
-import needed_library
-def FUNC_NAME(a, b):
-    return a + b```. Do not add any other contents inside the markdown code block. 
-
-Input Question: {question}
-
-Your response:
-"""
-        elif role == "critic":
-            user_content = f"""
-You are a science agent. You must put all python code as self-contained Python function in markdown code blocks. For example ```python
-import needed_library
-def FUNC_NAME(a, b):
-    return a + b```. Do not add any other contents inside the markdown code block. 
-
-Input Question: {question}
-
-Your response:
-"""
-        elif role == "refiner":
-            user_content = f"""
-You are a code agent. You must put all python code as self-contained Python function in markdown code blocks. For example ```python
-import needed_library
-def FUNC_NAME(a, b):
-    return a + b```. Do not add any other contents inside the markdown code block. 
-
-Input Question: {question}
-
-Your response:
-"""
-        elif role == "judger":
-            user_content = f"""
-You are a task summarizer. Given the final answer in markdown python code block.
-
-Content from Previous Agent:
-{context[:args.text_mas_context_length]}
-
-Input Question: {question}
-
-Your response:
-"""
-
-    elif args.task in ["winogrande"]:
-        if role == "planner":
-            user_content = f"""
-You are a math agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-"Your final answer must be selected from 1 and 2. For example \\boxed{{1}} or \\boxed{{2}}. Do not add any other contents inside the box."
-
-Input Question: {question}
-
-Your response:
-"""
-    
-        elif role == "critic":
-            user_content = f"""
-You are a science agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-"Your final answer must be selected from 1 and 2. For example \\boxed{{1}} or \\boxed{{2}}. Do not add any other contents inside the box."
-
-Input Question: {question}     
-
-Your response:
-"""
-    
-        elif role == "refiner":
-            user_content = f"""
-You are a code agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-"Your final answer must be selected from 1 and 2. For example \\boxed{{1}} or \\boxed{{2}}. Do not add any other contents inside the box."
-
-Input Question: {question}
-
-Your response:       
-"""
-        elif role == "judger":
-            user_content = f"""
-You are a task summarizer. Given the input question and responses from previous agents as reference, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-
-Content from Previous Agent:
-{context[:args.text_mas_context_length]}
-
-"Your final answer must be selected from 1 and 2. For example \\boxed{{1}} or \\boxed{{2}}. Do not add any other contents inside the box."
 
 Input Question: {question}
 
@@ -698,10 +265,7 @@ def build_agent_messages_single_agent(question: str, args=None):
     assert args.method in ["baseline"], "this prompt only for baseline method (single agent)"
     assert "qwen" in args.model_name.lower(), "this prompt only for qwen models"
 
-    task = args.task
-
-    if task in ["gsm8k", "aime2024", "aime2025"]:
-        user_content = f"""
+    user_content = f"""
 Target Question: {question}
 
 You are a helpful assistant.
@@ -709,54 +273,6 @@ You are a helpful assistant.
 You must reason step-by-step to solve the **provided Target Question** without outputting other irrelevant information.
 
 Now, reason step by step and output the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-"""
-
-    elif task in ["arc_easy", "arc_challenge", "gpqa", "medqa"]:
-        user_content = f"""
-Target Question: {question}
-
-You are a helpful assistant.
-
-You must reason step-by-step to solve the **provided Target Question** without outputting other irrelevant information.
-Your final answer must be selected from A,B,C,D. For example \\boxed{{A}}. Do not add any other contents inside the box.
-
-Now, reason step by step and output the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-"""
-
-    elif task in ["mbppplus", "humanevalplus"]:
-        user_content = f"""
-Target Question: {question}
-
-You must put all python code as self-contained Python function(s) in markdown code blocks. For example:
-```python
-import math
-def add(a, b):
-    return a + b
-```
-Do not add any other contents inside the markdown code block.
-Now, reason step by step and output the final answer:
-"""
-
-    elif task in ["winogrande"]:
-        user_content = f"""
-Target Question: {question}
-
-You are a helpful assistant.
-
-You must reason step-by-step to solve the **provided Target Question** without outputting other irrelevant information.
-Your final answer must be selected from 1 and 2. For example \\boxed{{1}} or \\boxed{{2}}. Do not add any other contents inside the box.
-
-Now, reason step by step and output the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
-"""
-
-    else:
-        user_content = f"""
-Question: {question}
-
-You are a helpful assistant.
-
-You must reason step-by-step to solve the question without outputting other irrelevant information.
-Present your reasoning, and then clearly state your final answer at the end.
 """
 
     return [

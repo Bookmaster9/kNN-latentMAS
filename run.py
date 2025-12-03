@@ -1,5 +1,8 @@
 import argparse
 import json
+import os
+import sys
+from datetime import datetime
 from typing import Dict, List, Tuple
 
 from tqdm import tqdm
@@ -11,6 +14,25 @@ from methods.text_mas import TextMASMethod
 from models import ModelWrapper
 from utils import auto_device, set_seed
 import time
+
+
+class TeeLogger:
+    """Logger that writes to both stdout and a file."""
+    def __init__(self, log_file):
+        self.terminal = sys.stdout
+        self.log = open(log_file, 'w', encoding='utf-8')
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+        self.log.flush()
+
+    def flush(self):
+        self.terminal.flush()
+        self.log.flush()
+
+    def close(self):
+        self.log.close()
 
 
 def evaluate(preds: List[Dict]) -> Tuple[float, int]:
@@ -83,13 +105,29 @@ def main():
     parser.add_argument("--latent_steps", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.6)
     parser.add_argument("--top_p", type=float, default=0.95)
-    parser.add_argument("--generate_bs", type=int, default=20)
+    parser.add_argument("--generate_bs", type=int, default=1)
     parser.add_argument("--text_mas_context_length", type=int, default=-1, help="TextMAS context length limit")
     parser.add_argument("--think", action="store_true", help="Manually add think token in the prompt for LatentMAS")
     parser.add_argument("--latent_space_realign", action="store_true")
     parser.add_argument("--seed", type=int, default=42)
 
     args = parser.parse_args()
+
+    # Create logs directory if it doesn't exist
+    os.makedirs("logs", exist_ok=True)
+
+    # Create log filename with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    model_short = args.model_name.replace("/", "_")
+    log_filename = f"logs/{model_short}_{args.prompt}_{args.method}_samples{args.max_samples}_{timestamp}.txt"
+
+    # Set up logging to both console and file
+    logger = TeeLogger(log_filename)
+    sys.stdout = logger
+    sys.stderr = logger
+
+    print(f"Logging to: {log_filename}")
+    print(f"Arguments: {vars(args)}\n")
 
     set_seed(args.seed)
     device = auto_device(args.device)
@@ -187,6 +225,11 @@ def main():
         )
     )
 
+    # Close logger and restore stdout/stderr
+    logger.close()
+    sys.stdout = logger.terminal
+    sys.stderr = logger.terminal
+    print(f"\nLog saved to: {log_filename}")
 
 
 if __name__ == "__main__":
