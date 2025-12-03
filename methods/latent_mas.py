@@ -35,6 +35,7 @@ class LatentMASMethod:
         self.method_name = 'latent_mas'
         self.latent_only = bool(getattr(args, "latent_only", False)) if args else False
         self.sequential_info_only = bool(getattr(args, "sequential_info_only", False)) if args else False
+        self.task = getattr(args, "task", "gsm8k")
 
         if self.latent_only:
             self.sequential_info_only = True
@@ -190,9 +191,15 @@ class LatentMASMethod:
         results: List[Dict] = []
         for idx, item in enumerate(items):
             final_text = final_texts[idx]
-            pred = normalize_answer(extract_gsm8k_answer(final_text))
-            gold = item.get("gold", "")
-            ok = (pred == gold) if (pred and gold) else False
+
+            if self.task in ["gpqa", "medqa"]:
+                pred = normalize_answer(extract_gsm8k_answer(final_text))
+                gold = item.get("gold", "")
+                ok = (pred == gold) if (pred and gold) else False
+            else:  # gsm8k
+                pred = normalize_answer(extract_gsm8k_answer(final_text))
+                gold = item.get("gold", "")
+                ok = (pred == gold) if (pred and gold) else False
             
             results.append(
                 {

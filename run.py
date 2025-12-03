@@ -7,7 +7,7 @@ from typing import Dict, List, Tuple
 
 from tqdm import tqdm
 
-from data import load_gsm8k
+from data import load_gsm8k, load_gpqa_diamond, load_medqa
 from methods.baseline import BaselineMethod
 from methods.latent_mas import LatentMASMethod
 from methods.text_mas import TextMASMethod
@@ -96,6 +96,7 @@ def main():
     parser.add_argument("--method", choices=["baseline", "text_mas", "latent_mas"], required=True)
     parser.add_argument("--model_name", type=str, required=True, choices=["Qwen/Qwen3-4B", "Qwen/Qwen3-4B", "Qwen/Qwen3-14B"])
     parser.add_argument("--max_samples", type=int, default=100)
+    parser.add_argument("--task", choices=["gsm8k", "gpqa", "medqa"], default="gsm8k")
     parser.add_argument("--prompt", type=str, choices=["sequential", "hierarchical"], default="sequential")
 
     # other args
@@ -169,7 +170,14 @@ def main():
     processed = 0
     batch: List[Dict] = []
 
-    dataset_iter = load_gsm8k(split=args.split)
+    if args.task == "gsm8k":
+        dataset_iter = load_gsm8k(split=args.split)
+    elif args.task == "gpqa":
+        dataset_iter = load_gpqa_diamond(split=args.split)
+    elif args.task == "medqa":
+        dataset_iter = load_medqa(split=args.split)
+    else:
+        raise ValueError(f"Unknown task: {args.task}")
     
     if args.max_samples == -1:
         dataset_iter = list(dataset_iter)  

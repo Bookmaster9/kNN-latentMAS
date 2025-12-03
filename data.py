@@ -17,6 +17,20 @@ def load_gsm8k(split: str = "test", cache_dir: Optional[str] = None) -> Iterable
             "gold": gold,
         }
 
+
+def load_gpqa_diamond(split: str = "test", cache_dir: Optional[str] = None) -> Iterable[Dict]:
+    ds = load_dataset("Idavidrein/gpqa", "gpqa_diamond", split=split, cache_dir=cache_dir)
+    for item in ds:
+        question = item["Question"].strip()
+        answer = item["Correct Answer"].strip()
+        gold = normalize_answer(answer)
+        yield {
+            "question": question,
+            "solution": answer,
+            "gold": gold,
+        }
+
+
 def load_medqa(split=None, subset=None, cache_dir=None):
 
     ds = load_dataset("json", data_files="./data/medqa.json", split='train')

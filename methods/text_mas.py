@@ -28,6 +28,7 @@ class TextMASMethod:
         self.agents = default_agents()
         self.args = args
         self.method_name = "text_mas"
+        self.task = getattr(args, "task", "gsm8k")
         
     def run_batch(self, items: List[Dict]) -> List[Dict]:
         if len(items) > self.generate_bs:
@@ -119,9 +120,15 @@ class TextMASMethod:
         results: List[Dict] = []
         for idx, item in enumerate(items):
             final_text = final_texts[idx]
-            pred = normalize_answer(extract_gsm8k_answer(final_text))
-            gold = item.get("gold", "")
-            ok = (pred == gold) if (pred and gold) else False
+
+            if self.task in ["gpqa", "medqa"]:
+                pred = normalize_answer(extract_gsm8k_answer(final_text))
+                gold = item.get("gold", "")
+                ok = (pred == gold) if (pred and gold) else False
+            else:  # gsm8k
+                pred = normalize_answer(extract_gsm8k_answer(final_text))
+                gold = item.get("gold", "")
+                ok = (pred == gold) if (pred and gold) else False
 
             results.append(
                 {

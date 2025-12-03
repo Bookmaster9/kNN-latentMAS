@@ -23,6 +23,7 @@ class BaselineMethod:
         self.generate_bs = max(1, generate_bs)
         self.method_name = "baseline"
         self.args = args
+        self.task = getattr(args, "task", "gsm8k")
 
     def run_batch(self, items: List[Dict]) -> List[Dict]:
         if len(items) > self.generate_bs:
@@ -47,9 +48,15 @@ class BaselineMethod:
 
         for idx, item in enumerate(items):
             generated_text = generated_batch[idx]
-            pred = normalize_answer(extract_gsm8k_answer(generated_text))
-            gold = item.get("gold", "")
-            ok = (pred == gold) if (pred and gold) else False
+
+            if self.task in ["gpqa", "medqa"]:
+                pred = normalize_answer(extract_gsm8k_answer(generated_text))
+                gold = item.get("gold", "")
+                ok = (pred == gold) if (pred and gold) else False
+            else:  # gsm8k
+                pred = normalize_answer(extract_gsm8k_answer(generated_text))
+                gold = item.get("gold", "")
+                ok = (pred == gold) if (pred and gold) else False
             
             mask = attention_mask[idx].bool()
             trimmed_ids = input_ids[idx][mask].to("cpu").tolist()
