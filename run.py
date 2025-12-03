@@ -112,6 +112,11 @@ def main():
     parser.add_argument("--latent_space_realign", action="store_true")
     parser.add_argument("--seed", type=int, default=42)
 
+    # KNN filtering arguments (for latent_mas only)
+    parser.add_argument("--knn_filter", action="store_true", help="Enable KNN filtering of KV cache")
+    parser.add_argument("--knn_k", type=int, default=20, help="Number of top-k relevant tokens to keep in KV cache")
+    parser.add_argument("--knn_min_keep", type=int, default=5, help="Minimum number of recent tokens to always keep")
+
     args = parser.parse_args()
 
     # Create logs directory if it doesn't exist

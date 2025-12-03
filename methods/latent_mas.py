@@ -37,6 +37,11 @@ class LatentMASMethod:
         self.sequential_info_only = bool(getattr(args, "sequential_info_only", False)) if args else False
         self.task = getattr(args, "task", "gsm8k")
 
+        # KNN filtering parameters
+        self.knn_filter = bool(getattr(args, "knn_filter", False)) if args else False
+        self.knn_k = getattr(args, "knn_k", 20) if args else 20
+        self.knn_min_keep = getattr(args, "knn_min_keep", 5) if args else 5
+
         if self.latent_only:
             self.sequential_info_only = True
 
@@ -67,6 +72,146 @@ class LatentMASMethod:
             else:
                 trimmed_layers.append(layer)
         return tuple(trimmed_layers)
+
+    def _knn_filter_kv_cache(
+        self,
+        past_kv: Optional[Tuple],
+        query_hidden: torch.Tensor,
+        k: Optional[int] = None,
+    ) -> Optional[Tuple]:
+        """
+        Filter KV cache to keep only the k most relevant entries based on
+        similarity to the current query hidden state.
+
+        Args:
+            past_kv: The past key-value cache tuple
+            query_hidden: Current hidden state to use as query [batch, hidden_dim] or [batch, seq, hidden_dim]
+            k: Number of nearest neighbors to keep (uses self.knn_k if None)
+
+        Returns:
+            Filtered past_kv with only top-k relevant entries, maintaining temporal order
+        """
+        if past_kv is None:
+            return None
+
+        k = k if k is not None else self.knn_k
+        seq_len = _past_length(past_kv)
+
+        # If cache is smaller than k, no filtering needed
+        if seq_len <= k:
+            return past_kv
+
+        # Ensure k respects minimum keep
+        k = max(k, self.knn_min_keep)
+        k = min(k, seq_len)
+
+        # Convert Cache object to legacy format if needed
+        was_cache_object = False
+        cache_class = None
+        if Cache is not None and isinstance(past_kv, Cache):
+            was_cache_object = True
+            cache_class = past_kv.__class__
+            past_kv = past_kv.to_legacy_cache()
+
+        # Extract keys from the middle layer for similarity computation
+        # past_kv format: (num_layers, 2, batch_size, num_heads, seq_len, head_dim)
+        num_layers = len(past_kv)
+        middle_layer_idx = num_layers // 2
+        keys = past_kv[middle_layer_idx][0]  # [batch_size, num_heads, seq_len, head_dim]
+
+        batch_size, num_heads, seq_len, head_dim = keys.shape
+
+        # Average keys across heads: [batch_size, seq_len, head_dim]
+        keys_avg = keys.mean(dim=1)
+
+        # Prepare query: ensure it's [batch_size, hidden_dim]
+        if query_hidden.dim() == 3:  # [batch_size, seq, hidden_dim]
+            query_hidden = query_hidden.mean(dim=1)  # Average across sequence
+
+        # Project query to match key dimension if needed
+        hidden_dim = query_hidden.shape[-1]
+        if hidden_dim != head_dim:
+            # Query is in full hidden space, keys are in head space
+            # Reshape query to [batch_size, num_heads, head_dim] and average across heads
+            if hidden_dim == num_heads * head_dim:
+                # Hidden dim perfectly divides into heads
+                query_hidden = query_hidden.view(batch_size, num_heads, head_dim).mean(dim=1)
+            else:
+                # Use linear projection to match dimensions
+                # Simply reshape and average to get to head_dim size
+                query_hidden = query_hidden.view(batch_size, -1, head_dim).mean(dim=1)
+
+        # Normalize for cosine similarity
+        keys_norm = torch.nn.functional.normalize(keys_avg, p=2, dim=-1)  # [batch_size, seq_len, head_dim]
+        query_norm = torch.nn.functional.normalize(query_hidden.unsqueeze(1), p=2, dim=-1)  # [batch_size, 1, head_dim]
+
+        # Compute similarity scores: [batch_size, seq_len]
+        similarity = torch.matmul(keys_norm, query_norm.transpose(-2, -1)).squeeze(-1)
+
+        # Always keep the most recent min_keep tokens
+        min_keep = min(self.knn_min_keep, seq_len)
+        k_selective = k - min_keep
+
+        if k_selective > 0:
+            # Get top-k from earlier tokens
+            early_seq_len = seq_len - min_keep
+            early_similarity = similarity[:, :early_seq_len]  # [batch_size, early_seq_len]
+
+            # Get top-k indices from early tokens
+            topk_values, topk_indices = torch.topk(early_similarity, k=min(k_selective, early_seq_len), dim=1)
+
+            # Sort indices to maintain temporal order
+            topk_indices_sorted, _ = torch.sort(topk_indices, dim=1)
+
+            # Combine with recent tokens
+            recent_indices = torch.arange(seq_len - min_keep, seq_len, device=keys.device).unsqueeze(0).expand(batch_size, -1)
+            selected_indices = torch.cat([topk_indices_sorted, recent_indices], dim=1)  # [batch_size, k]
+        else:
+            # Just keep the most recent k tokens
+            selected_indices = torch.arange(seq_len - k, seq_len, device=keys.device).unsqueeze(0).expand(batch_size, -1)
+
+        # Filter the KV cache for all layers
+        filtered_layers = []
+        for layer_kv in past_kv:
+            if isinstance(layer_kv, tuple):
+                # layer_kv is (keys, values)
+                filtered_k = self._select_indices_from_cache(layer_kv[0], selected_indices)
+                filtered_v = self._select_indices_from_cache(layer_kv[1], selected_indices)
+                filtered_layers.append((filtered_k, filtered_v))
+            elif torch.is_tensor(layer_kv):
+                filtered_layers.append(self._select_indices_from_cache(layer_kv, selected_indices))
+            else:
+                filtered_layers.append(layer_kv)
+
+        filtered_past = tuple(filtered_layers)
+
+        # Convert back to Cache object if needed
+        if was_cache_object:
+            filtered_past = cache_class.from_legacy_cache(filtered_past)
+
+        return filtered_past
+
+    def _select_indices_from_cache(self, cache_tensor: torch.Tensor, indices: torch.Tensor) -> torch.Tensor:
+        """
+        Select specific sequence positions from cache tensor.
+
+        Args:
+            cache_tensor: [batch_size, num_heads, seq_len, head_dim]
+            indices: [batch_size, k] indices to select
+
+        Returns:
+            Selected tensor: [batch_size, num_heads, k, head_dim]
+        """
+        batch_size, num_heads, seq_len, head_dim = cache_tensor.shape
+        k = indices.shape[1]
+
+        # Expand indices for gathering: [batch_size, num_heads, k, head_dim]
+        indices_expanded = indices.unsqueeze(1).unsqueeze(-1).expand(batch_size, num_heads, k, head_dim)
+
+        # Gather along sequence dimension
+        selected = torch.gather(cache_tensor, dim=2, index=indices_expanded)
+
+        return selected
 
     @torch.no_grad()
     def run_batch(self, items: List[Dict]) -> List[Dict]:
@@ -101,7 +246,7 @@ class LatentMASMethod:
 
                 if self.args.think:
                         wrapped_prompts = [f"{prompt}<think>" for prompt in prompts]
-                else: 
+                else:
                     wrapped_prompts = prompts
 
                 wrapped_encoded = self.model.tokenizer(
@@ -116,6 +261,15 @@ class LatentMASMethod:
                 for ids_row, mask_row in zip(wrapped_ids, wrapped_mask):
                     active_ids = ids_row[mask_row.bool()].tolist()
                     wrapped_tokens_batch.append(self.model.tokenizer.convert_ids_to_tokens(active_ids))
+
+                # Apply KNN filtering to past_kv before passing to next agent
+                if self.knn_filter and past_kv is not None:
+                    # Use current input embeddings as query for KNN
+                    with torch.no_grad():
+                        query_embeds = self.model.model.get_input_embeddings()(wrapped_ids)
+                        # Average across sequence length: [batch, seq, hidden] -> [batch, hidden]
+                        query_hidden = query_embeds.mean(dim=1)
+                        past_kv = self._knn_filter_kv_cache(past_kv, query_hidden)
 
                 past_kv = self.model.generate_latent_batch(
                     wrapped_ids,
@@ -149,9 +303,9 @@ class LatentMASMethod:
 
                 if self.args.think:
                         judger_prompts = [f"{prompt}<think>" for prompt in prompts]
-                else: 
+                else:
                     judger_prompts = prompts
-                
+
                 judger_encoded = self.model.tokenizer(
                     judger_prompts,
                     return_tensors="pt",
@@ -164,6 +318,16 @@ class LatentMASMethod:
                 for ids_row, mask_row in zip(judger_ids, judger_mask):
                     active_ids = ids_row[mask_row.bool()].tolist()
                     judger_tokens_batch.append(self.model.tokenizer.convert_ids_to_tokens(active_ids))
+
+                # Apply KNN filtering to past_for_decoding before judger
+                if self.knn_filter and past_for_decoding is not None:
+                    # Use judger input embeddings as query for KNN
+                    with torch.no_grad():
+                        query_embeds = self.model.model.get_input_embeddings()(judger_ids)
+                        # Average across sequence length: [batch, seq, hidden] -> [batch, hidden]
+                        query_hidden = query_embeds.mean(dim=1)
+                        past_for_decoding = self._knn_filter_kv_cache(past_for_decoding, query_hidden)
+
                 generated_batch, _ = self.model.generate_text_batch(
                     judger_ids,
                     judger_mask,
