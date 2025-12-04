@@ -1,80 +1,34 @@
 <a name="readme-top"></a>
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo.png">
-    <img alt="LatentMAS" src="assets/logo.png" width=500>
-  </picture>
-</p>
+# Latent Collaboration in Multi-Agent Systems with KNN Cache Filtering
 
-<h3 align="center">
-Latent Collaboration in Multi-Agent Systems
-</h3>
-
-
-
-<p align="center">
-    <a href="https://arxiv.org/abs/2511.20639"><img src="https://img.shields.io/badge/arXiv-2511.20639-B31B1B.svg?logo=arxiv" alt="Arxiv"></a>
-    <a href="https://huggingface.co/papers/2511.20639"><img src="https://img.shields.io/badge/Huggingface-DailyPaper-FFD21E.svg?logo=huggingface" alt="Huggingface Paper"></a>
-    <a href="https://x.com/LingYang_PU/status/1993510834245714001"><img src="https://img.shields.io/badge/Coverage-LatentMAS-2176BC.svg?logo=x" alt="X"></a>
-  
-  </p>
+[![arXiv](https://img.shields.io/badge/arXiv-2511.20639-B31B1B.svg?logo=arxiv)](https://arxiv.org/abs/2511.20639)
+[![Huggingface](https://img.shields.io/badge/Huggingface-DailyPaper-FFD21E.svg?logo=huggingface)](https://huggingface.co/papers/2511.20639)
+[![X](https://img.shields.io/badge/Coverage-LatentMAS-2176BC.svg?logo=x)](https://x.com/LingYang_PU/status/1993510834245714001)
 
 ---
 
-<p align="center">
-  <img src="assets/main_res.png" width="1000">
-</p>
-
 ## 💡 Introduction
 
+This repository is based on the **LatentMAS** framework ([Zou et al., 2025](https://arxiv.org/abs/2511.20639)), a multi-agent reasoning framework that **moves agent collaboration from token space into the model's latent space**.
 
-**LatentMAS** is a multi-agent reasoning framework that **moves agent collaboration from token space into the model’s latent space**.  
-Instead of producing long textual reasoning traces, agents communicate by **passing latent thoughts** through their own **working memory**. LatentMAS has the following key features:
+**Key Features:**
+- **Efficient** multi-step reasoning with drastically fewer tokens
+- **Training-free** latent-space alignment for stable generation
+- **KNN-based KV cache filtering** for memory-efficient agent communication
+- **Three selection strategies**: top-k similarity, bottom-k diversity, and random baseline
+- Compatible with **any HuggingFace model**
 
-- **Efficient** multi-step reasoning with drastically fewer tokens  
-- **Training-free** latent-space alignment for stable generation  
-- **A general technique** compatible with **any HF model** and optionally **vLLM** backends.
+This implementation extends the original LatentMAS with experimental KNN filtering capabilities for the KV cache, enabling more efficient memory usage during multi-agent collaboration.
 
-Overall, LatentMAS achieves **superior performance**, **lower token usage**, and **major wall-clock speedups** of multi-agent system.
+## 📊 Supported Datasets
 
-<p align="center">
-  <img src="assets/main.png" width="1000">
-</p>
-
-
-## 🔔 News
-
-- **[2025-11-25]** We have released our paper and code implementations for LatentMAS! Stay tuned for more model-backbone supports and advanced features!
-- **[2025-11-25]** We are featured as 🤗 [**HuggingFace 1st Paper of the Day**](https://huggingface.co/papers/2511.20639)!
-
-## 📊 Experiments Overview
-
-
-### ⭐ Main Results  
-Three main tables from our paper spanning 9 tasks across math & science reasoning, commensonse reasoning, and code generation:
-
-- **Table 1 — LatentMAS under the Sequantial MAS setting**  
-  <p align="center"><img src="assets/main_table1.png" width="1000"></p>
-
-- **Table 2 — LatentMAS under the Hierarchical MAS setting**  
-  <p align="center"><img src="assets/main_table2.png" width="1000"></p>
-
-- **Table 3 — Main Results on Reasoning Intensive Tasks**
-  <p align="center"><img src="assets/main_table3.png" width="1000"></p>
-
-
-### ⚡ Superior Efficiency on **Time and Tokens**
-
-Overall, LatentMAS reduces:
-- **~50–80% tokens**
-- **~3×–7× wall-clock time**
-compared to standard Text-MAS or chain-of-thought baselines.
-
+This implementation supports the following datasets:
+- **GSM8K**: Grade school math problems
+- **GPQA (Diamond)**: Graduate-level science questions
+- **MedQA**: Medical question answering
 
 ## 🛠️ Getting Started
-
-This repository provides all code for reproducing LatentMAS, TextMAS, and baseline single-agent experiments across GSM8K, AIME24/25, GPQA, ARC-Easy/Challenge, MBPP+, HumanEval+, and MedQA.
 
 ### ⚙️ Setup Environment Variables
 
@@ -84,10 +38,9 @@ We recommend setting your HF cache directory to avoid repeated downloads:
 export HF_HOME=/path/to/huggingface
 export TRANSFORMERS_CACHE=$HF_HOME
 export HF_DATASETS_CACHE=$HF_HOME
-````
+```
 
 Models and datasets will automatically be downloaded into `$HF_HOME`.
-
 
 ### 📦 Install Packages
 
@@ -96,12 +49,6 @@ conda create -n latentmas python=3.10 -y
 conda activate latentmas
 
 pip install -r requirements.txt
-```
-
-If you want **vLLM support**, also install:
-
-```bash
-pip install vllm
 ```
 
 ## 🚀 Quick Start
@@ -118,54 +65,181 @@ cd LatentMAS
 ```
 LatentMAS/
 │── run.py                 # Main entry for experiments
-│── models.py              # Wrapper for HF + vLLM + latent realignment
+│── models.py              # Wrapper for HF models + latent realignment
 │── methods/
 │   ├── baseline.py        # Single-agent baseline
 │   ├── text_mas.py        # Token-space multi-agent method
-│   └── latent_mas.py      # Latent-space multi-agent (our method)
+│   └── latent_mas.py      # Latent-space multi-agent (with KNN filtering)
 │── prompts.py             # Prompt constructors
-│── data.py                # Dataset loaders
-│── data/                  # Provided data + figures (We give medqa.json as an example here)
+│── data.py                # Dataset loaders (GSM8K, GPQA, MedQA)
+│── data/                  # Provided data + figures
 │── utils.py               # Answer parsing / timeout / helpers
 │── example_logs/          # Example logs from LatentMAS
 │── requirements.txt
 ```
 
-
-## 🧪 Running Experiments (standard HF backend)
+## 🧪 Running Experiments
 
 ### 🔹 **Baseline (single model)**
 
 ```bash
-python run.py --method baseline --model_name Qwen/Qwen3-14B --task gsm8k --max_samples 100
+python run.py --method baseline --model_name Qwen/Qwen3-4B --task gsm8k --max_samples 100
 ```
 
-
-### 🔹 **TextMAS (text based multi-agent system)**
+### 🔹 **TextMAS (text-based multi-agent system)**
 
 ```bash
-python run.py --method text_mas --model_name Qwen/Qwen3-14B --task gsm8k --prompt sequential --max_samples 100
+python run.py --method text_mas --model_name Qwen/Qwen3-4B --task gsm8k --prompt sequential --max_samples 100
 ```
 
-
-### 🔹 **LatentMAS (our latent mas method)**
+### 🔹 **LatentMAS (latent multi-agent system)**
 
 ```bash
-python run.py --method latent_mas --model_name Qwen/Qwen3-14B --task gsm8k --latent_steps 20 --prompt sequential --max_samples 100
+python run.py --method latent_mas --model_name Qwen/Qwen3-4B --task gsm8k --latent_steps 10 --prompt sequential --max_samples 100
 ```
 
-#### Notes:
+#### Key Parameters:
 
 * **`--latent_steps`** ∈ [0, 80]
-  Tune for best performance — typically **20–40** works well.
+  Number of latent reasoning steps per agent. Typically **10–20** works well.
+
 * **`--latent_space_realign`**
-  Enables latent→embedding alignment
-  We treat this as a **hyperparameter** — enable/disable depending on task/model:
+  Enables latent→embedding alignment for better generation stability.
 
 ```bash
-python run.py --method latent_mas --model_name Qwen/Qwen3-14B --task gsm8k --latent_steps 20 --prompt sequential --max_samples 100 --latent_space_realign
+python run.py --method latent_mas --model_name Qwen/Qwen3-4B --task gsm8k --latent_steps 10 --latent_space_realign --max_samples 100
 ```
 
+* **`--prompt`** ∈ {`sequential`, `hierarchical`}
+  Prompt structure for agent collaboration.
+
+## 🔬 KNN Cache Filtering (Experimental)
+
+This implementation includes experimental KNN-based filtering of the KV cache to reduce memory usage during agent-to-agent communication.
+
+### Key KNN Parameters:
+
+* **`--knn_filter`**
+  Enable KNN filtering of the KV cache
+
+* **`--knn_percentage`** (default: 0.8)
+  Percentage of tokens to keep (0.0-1.0). E.g., 0.8 keeps 80% of the cache.
+
+* **`--knn_min_keep`** (default: 5)
+  Minimum number of recent tokens to always preserve, regardless of similarity.
+
+* **`--knn_strategy`** ∈ {`top`, `bottom`, `random`} (default: `top`)
+  - **`top`**: Keep most similar tokens (semantic relevance)
+  - **`bottom`**: Keep least similar tokens (diversity baseline)
+  - **`random`**: Keep random tokens (control baseline)
+
+### 🧬 KNN Filtering Examples
+
+#### 1. Standard KNN: Keep 80% most similar tokens
+
+```bash
+python run.py \
+  --method latent_mas \
+  --model_name Qwen/Qwen3-4B \
+  --task gsm8k \
+  --latent_steps 10 \
+  --max_samples 10 \
+  --knn_filter \
+  --knn_percentage 0.8 \
+  --knn_strategy top
+```
+
+#### 2. Aggressive filtering: Keep only 50% most similar
+
+```bash
+python run.py \
+  --method latent_mas \
+  --model_name Qwen/Qwen3-4B \
+  --task gpqa \
+  --latent_steps 10 \
+  --max_samples 10 \
+  --knn_filter \
+  --knn_percentage 0.5 \
+  --knn_strategy top
+```
+
+#### 3. Diversity baseline: Keep 80% least similar tokens
+
+```bash
+python run.py \
+  --method latent_mas \
+  --model_name Qwen/Qwen3-4B \
+  --task medqa \
+  --latent_steps 10 \
+  --max_samples 10 \
+  --knn_filter \
+  --knn_percentage 0.8 \
+  --knn_strategy bottom
+```
+
+#### 4. Random baseline: Keep random 80% of tokens
+
+```bash
+python run.py \
+  --method latent_mas \
+  --model_name Qwen/Qwen3-4B \
+  --task gsm8k \
+  --latent_steps 10 \
+  --max_samples 10 \
+  --knn_filter \
+  --knn_percentage 0.8 \
+  --knn_strategy random
+```
+
+#### 5. Conservative filtering with larger minimum keep
+
+```bash
+python run.py \
+  --method latent_mas \
+  --model_name Qwen/Qwen3-4B \
+  --task gsm8k \
+  --latent_steps 10 \
+  --max_samples 10 \
+  --knn_filter \
+  --knn_percentage 0.9 \
+  --knn_min_keep 10 \
+  --knn_strategy top
+```
+
+#### 6. Full experiment with all features
+
+```bash
+python run.py \
+  --method latent_mas \
+  --model_name Qwen/Qwen3-4B \
+  --task gsm8k \
+  --prompt hierarchical \
+  --latent_steps 20 \
+  --max_samples 100 \
+  --latent_space_realign \
+  --knn_filter \
+  --knn_percentage 0.7 \
+  --knn_min_keep 5 \
+  --knn_strategy top \
+  --temperature 0.6 \
+  --seed 42
+```
+
+### 🔍 Understanding KNN Strategies
+
+| Strategy | What it keeps | Use case |
+|----------|--------------|----------|
+| `top` (default) | Most semantically similar tokens to current query | Main approach - maximize relevance |
+| `bottom` | Least similar tokens (diverse/orthogonal context) | Test if diversity > similarity |
+| `random` | Random selection of tokens | Control for cache size reduction effect |
+
+### 💡 KNN Filtering Tips
+
+1. **Start with default settings** (`--knn_percentage 0.8 --knn_strategy top`)
+2. **Experiment with percentage**: Try 0.5, 0.7, 0.8, 0.9 to find the sweet spot
+3. **Use `random` strategy** as a baseline to validate that similarity-based selection matters
+4. **Adjust `knn_min_keep`** based on your latent_steps (e.g., 5-10 for most cases)
+5. **Monitor accuracy vs memory tradeoff** - lower percentages save more memory but may hurt accuracy
 
 ## 📘 Example Logs
 
@@ -176,51 +250,9 @@ Two example LatentMAS logs are provided for reference purposes:
 
 You can open them to view the full agent interaction traces and outputs.
 
-
-## ⚡ vLLM Integration
-
-LatentMAS supports vLLM for faster inference.
-
-### 🔹 Baseline with vLLM
-
-```bash
-python run.py --method baseline --model_name Qwen/Qwen3-14B --task gsm8k --max_samples 100 --use_vllm
-```
-
-### 🔹 TextMAS with vLLM
-
-```bash
-python run.py --method text_mas --model_name Qwen/Qwen3-14B --task gsm8k --prompt sequential --max_samples 100 --use_vllm
-```
-
-### 🔹 LatentMAS with vLLM
-
-LatentMAS supports a **hybrid HF + vLLM pipeline** for fast inference:
-- vLLM handles **final text generation** (with prefix caching, tensor parallelism, etc.)
-- A HuggingFace model handles **latent-space rollout** and hidden-state alignment
-
-For this setup, we recommend using two GPUs:
-- One GPU for vLLM (`--device`, e.g., `cuda:0`)
-- One GPU for the auxiliary HF model (`--device2`, e.g., `cuda:1`)
-
-```bash
-CUDA_VISIBLE_DEVICES=0,1 python run.py --method latent_mas --model_name Qwen/Qwen3-14B --task gsm8k --latent_steps 20 --prompt sequential --max_samples 100 \
-  --use_vllm \
-  --use_second_HF_model \
-  --enable_prefix_caching \
-  --device2 cuda:1
-```
-
-**📍Important Note:**
-
-> vLLM does **not** officially support modifying KV-cache or prompting via latent embeddings.
-> We modify the partial inner package inside vLLM backend for our method implementation.
-> Note minor numeric differences may arise compared to offical HF backend due to different decoding (generation) strategies. Please Use the HF backend to reproduce the official published results.
-
-
 ## 📚 Citation
 
-💫 If you find **LatentMAS** helpful, please kindly give us a star ⭐️ and cite below. Thanks!
+This implementation is based on the LatentMAS paper. If you find this work helpful, please cite:
 
 ```
 @article{zou2025latentmas,
@@ -231,6 +263,6 @@ CUDA_VISIBLE_DEVICES=0,1 python run.py --method latent_mas --model_name Qwen/Qwe
 }
 ```
 
-## 🤝 Ackowledgement 
+## 🤝 Acknowledgement
 
-This code is partially based on the amazing work of [vLLM](https://github.com/vllm-project/vllm).
+This code is based on the LatentMAS framework by [Zou et al., 2025](https://arxiv.org/abs/2511.20639). The KNN cache filtering extension was developed independently for research purposes.
