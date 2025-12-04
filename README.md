@@ -2,12 +2,6 @@
 
 # Latent Collaboration in Multi-Agent Systems with KNN Cache Filtering
 
-[![arXiv](https://img.shields.io/badge/arXiv-2511.20639-B31B1B.svg?logo=arxiv)](https://arxiv.org/abs/2511.20639)
-[![Huggingface](https://img.shields.io/badge/Huggingface-DailyPaper-FFD21E.svg?logo=huggingface)](https://huggingface.co/papers/2511.20639)
-[![X](https://img.shields.io/badge/Coverage-LatentMAS-2176BC.svg?logo=x)](https://x.com/LingYang_PU/status/1993510834245714001)
-
----
-
 ## 💡 Introduction
 
 This repository is based on the **LatentMAS** framework ([Zou et al., 2025](https://arxiv.org/abs/2511.20639)), a multi-agent reasoning framework that **moves agent collaboration from token space into the model's latent space**.
@@ -240,15 +234,6 @@ python run.py \
 3. **Use `random` strategy** as a baseline to validate that similarity-based selection matters
 4. **Adjust `knn_min_keep`** based on your latent_steps (e.g., 5-10 for most cases)
 5. **Monitor accuracy vs memory tradeoff** - lower percentages save more memory but may hurt accuracy
-
-## 📘 Example Logs
-
-Two example LatentMAS logs are provided for reference purposes:
-
-* `example_logs/qwen3_14b_mbppplus_sequential.txt`
-* `example_logs/qwen3_14b_humanevalplus_hierarchical.txt`
-
-You can open them to view the full agent interaction traces and outputs.
 
 ## 📚 Citation
 
