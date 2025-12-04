@@ -39,8 +39,9 @@ class LatentMASMethod:
 
         # KNN filtering parameters
         self.knn_filter = bool(getattr(args, "knn_filter", False)) if args else False
-        self.knn_k = getattr(args, "knn_k", 20) if args else 20
+        self.knn_percentage = getattr(args, "knn_percentage", 0.8) if args else 0.8  # Keep 80% of tokens
         self.knn_min_keep = getattr(args, "knn_min_keep", 5) if args else 5
+        self.knn_strategy = getattr(args, "knn_strategy", "top") if args else "top"  # "top", "bottom", or "random"
 
         if self.latent_only:
             self.sequential_info_only = True
@@ -77,33 +78,33 @@ class LatentMASMethod:
         self,
         past_kv: Optional[Tuple],
         query_hidden: torch.Tensor,
-        k: Optional[int] = None,
+        percentage: Optional[float] = None,
     ) -> Optional[Tuple]:
         """
-        Filter KV cache to keep only the k most relevant entries based on
+        Filter KV cache to keep only a percentage of the most relevant entries based on
         similarity to the current query hidden state.
 
         Args:
             past_kv: The past key-value cache tuple
             query_hidden: Current hidden state to use as query [batch, hidden_dim] or [batch, seq, hidden_dim]
-            k: Number of nearest neighbors to keep (uses self.knn_k if None)
+            percentage: Percentage of tokens to keep (0.0-1.0, uses self.knn_percentage if None)
 
         Returns:
-            Filtered past_kv with only top-k relevant entries, maintaining temporal order
+            Filtered past_kv with only top percentage of relevant entries, maintaining temporal order
         """
         if past_kv is None:
             return None
 
-        k = k if k is not None else self.knn_k
+        percentage = percentage if percentage is not None else self.knn_percentage
         seq_len = _past_length(past_kv)
 
-        # If cache is smaller than k, no filtering needed
-        if seq_len <= k:
-            return past_kv
-
-        # Ensure k respects minimum keep
-        k = max(k, self.knn_min_keep)
+        # Calculate k based on percentage
+        k = max(int(seq_len * percentage), self.knn_min_keep)
         k = min(k, seq_len)
+
+        # If we're keeping everything or nearly everything, no filtering needed
+        if k >= seq_len:
+            return past_kv
 
         # Convert Cache object to legacy format if needed
         was_cache_object = False
@@ -153,12 +154,27 @@ class LatentMASMethod:
         k_selective = k - min_keep
 
         if k_selective > 0:
-            # Get top-k from earlier tokens
+            # Get top-k from earlier tokens based on strategy
             early_seq_len = seq_len - min_keep
             early_similarity = similarity[:, :early_seq_len]  # [batch_size, early_seq_len]
 
-            # Get top-k indices from early tokens
-            topk_values, topk_indices = torch.topk(early_similarity, k=min(k_selective, early_seq_len), dim=1)
+            # Select indices based on strategy
+            if self.knn_strategy == "top":
+                # Keep most similar tokens (highest similarity scores)
+                topk_values, topk_indices = torch.topk(early_similarity, k=min(k_selective, early_seq_len), dim=1, largest=True)
+            elif self.knn_strategy == "bottom":
+                # Keep least similar tokens (lowest similarity scores)
+                topk_values, topk_indices = torch.topk(early_similarity, k=min(k_selective, early_seq_len), dim=1, largest=False)
+            elif self.knn_strategy == "random":
+                # Keep random tokens (baseline)
+                k_rand = min(k_selective, early_seq_len)
+                # Generate random indices for each batch element
+                topk_indices = torch.stack([
+                    torch.randperm(early_seq_len, device=keys.device)[:k_rand]
+                    for _ in range(batch_size)
+                ])
+            else:
+                raise ValueError(f"Invalid knn_strategy: {self.knn_strategy}. Must be 'top', 'bottom', or 'random'")
 
             # Sort indices to maintain temporal order
             topk_indices_sorted, _ = torch.sort(topk_indices, dim=1)

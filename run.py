@@ -114,8 +114,10 @@ def main():
 
     # KNN filtering arguments (for latent_mas only)
     parser.add_argument("--knn_filter", action="store_true", help="Enable KNN filtering of KV cache")
-    parser.add_argument("--knn_k", type=int, default=20, help="Number of top-k relevant tokens to keep in KV cache")
+    parser.add_argument("--knn_percentage", type=float, default=0.8, help="Percentage of tokens to keep (0.0-1.0), e.g., 0.8 keeps 80%%")
     parser.add_argument("--knn_min_keep", type=int, default=5, help="Minimum number of recent tokens to always keep")
+    parser.add_argument("--knn_strategy", type=str, choices=["top", "bottom", "random"], default="top",
+                        help="Strategy for selecting tokens: 'top' (most similar), 'bottom' (least similar), 'random' (random selection)")
 
     args = parser.parse_args()
 
