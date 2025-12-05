@@ -110,6 +110,7 @@ def main():
     parser.add_argument("--text_mas_context_length", type=int, default=-1, help="TextMAS context length limit")
     parser.add_argument("--think", action="store_true", help="Manually add think token in the prompt for LatentMAS")
     parser.add_argument("--latent_space_realign", action="store_true")
+    parser.add_argument("--include_old_prompts", action="store_true", help="Use prompts v2.py with old prompt included in each agent")
     parser.add_argument("--seed", type=int, default=42)
 
     # KNN filtering arguments (for latent_mas only)

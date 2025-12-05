@@ -2,10 +2,10 @@ from typing import Dict, List, Optional, Tuple
 
 from . import default_agents
 from models import ModelWrapper, _past_length
-from prompts import build_agent_message_sequential_latent_mas, build_agent_message_hierarchical_latent_mas
 from utils import extract_gsm8k_answer, normalize_answer
 import torch
 import argparse
+import importlib
 
 try:
     from transformers.cache_utils import Cache
@@ -36,6 +36,16 @@ class LatentMASMethod:
         self.latent_only = bool(getattr(args, "latent_only", False)) if args else False
         self.sequential_info_only = bool(getattr(args, "sequential_info_only", False)) if args else False
         self.task = getattr(args, "task", "gsm8k")
+
+        # Dynamically import the appropriate prompt module based on --include_old_prompts flag
+        include_old_prompts = bool(getattr(args, "include_old_prompts", False)) if args else False
+        if include_old_prompts:
+            prompts_module = importlib.import_module("prompts v2")
+        else:
+            prompts_module = importlib.import_module("prompts")
+
+        self.build_agent_message_sequential = prompts_module.build_agent_message_sequential_latent_mas
+        self.build_agent_message_hierarchical = prompts_module.build_agent_message_hierarchical_latent_mas
 
         # KNN filtering parameters
         self.knn_filter = bool(getattr(args, "knn_filter", False)) if args else False
@@ -243,12 +253,12 @@ class LatentMASMethod:
 
             if self.args.prompt == "sequential":
                 batch_messages = [
-                    build_agent_message_sequential_latent_mas(role=agent.role, question=item["question"], context="", method=self.method_name, args=self.args)
+                    self.build_agent_message_sequential(role=agent.role, question=item["question"], context="", method=self.method_name, args=self.args)
                     for item in items
                 ]
             elif self.args.prompt == "hierarchical":
                 batch_messages = [
-                    build_agent_message_hierarchical_latent_mas(role=agent.role, question=item["question"], context="", method=self.method_name, args=self.args)
+                    self.build_agent_message_hierarchical(role=agent.role, question=item["question"], context="", method=self.method_name, args=self.args)
                     for item in items
                 ]
 
