@@ -120,6 +120,10 @@ def main():
     parser.add_argument("--knn_strategy", type=str, choices=["top", "bottom", "random"], default="top",
                         help="Strategy for selecting tokens: 'top' (most similar), 'bottom' (least similar), 'random' (random selection)")
 
+    # Visualization arguments
+    parser.add_argument("--show_heatmaps", action="store_true", help="Generate and save heatmaps of cosine similarities across all layers for agent transitions")
+    parser.add_argument("--show_heatmaps_singlelayer", action="store_true", help="Generate and save single-layer heatmaps (middle layer used for kNN) with min-max normalization")
+
     args = parser.parse_args()
 
     # Create logs directory if it doesn't exist
