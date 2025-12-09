@@ -124,6 +124,9 @@ def main():
     parser.add_argument("--show_heatmaps", action="store_true", help="Generate and save heatmaps of cosine similarities across all layers for agent transitions")
     parser.add_argument("--show_heatmaps_singlelayer", action="store_true", help="Generate and save single-layer heatmaps (middle layer used for kNN) with min-max normalization")
 
+    # Embedding analysis arguments
+    parser.add_argument("--save_embeddings", action="store_true", help="Save embeddings from both text_mas and latent_mas for comparison analysis")
+
     args = parser.parse_args()
 
     # Create logs directory if it doesn't exist

@@ -7,17 +7,18 @@
 This repository is based on the **LatentMAS** framework ([Zou et al., 2025](https://arxiv.org/abs/2511.20639)), a multi-agent reasoning framework that **moves agent collaboration from token space into the model's latent space**.
 
 **Key Features:**
+
 - **Efficient** multi-step reasoning with drastically fewer tokens
 - **Training-free** latent-space alignment for stable generation
 - **KNN-based KV cache filtering** for memory-efficient agent communication
 - **Three selection strategies**: top-k similarity, bottom-k diversity, and random baseline
-- Compatible with **any HuggingFace model**
 
 This implementation extends the original LatentMAS with experimental KNN filtering capabilities for the KV cache, enabling more efficient memory usage during multi-agent collaboration.
 
 ## 📊 Supported Datasets
 
 This implementation supports the following datasets:
+
 - **GSM8K**: Grade school math problems
 - **GPQA (Diamond)**: Graduate-level science questions
 - **MedQA**: Medical question answering
@@ -65,6 +66,7 @@ LatentMAS/
 │   ├── text_mas.py        # Token-space multi-agent method
 │   └── latent_mas.py      # Latent-space multi-agent (with KNN filtering)
 │── prompts.py             # Prompt constructors
+│── prompts v2.py          # Updated Prompt constructors for Bottom kNN
 │── data.py                # Dataset loaders (GSM8K, GPQA, MedQA)
 │── data/                  # Provided data + figures
 │── utils.py               # Answer parsing / timeout / helpers
@@ -94,17 +96,17 @@ python run.py --method latent_mas --model_name Qwen/Qwen3-4B --task gsm8k --late
 
 #### Key Parameters:
 
-* **`--latent_steps`** ∈ [0, 80]
+- **`--latent_steps`** ∈ [0, 80]
   Number of latent reasoning steps per agent. Typically **10–20** works well.
 
-* **`--latent_space_realign`**
+- **`--latent_space_realign`**
   Enables latent→embedding alignment for better generation stability.
 
 ```bash
 python run.py --method latent_mas --model_name Qwen/Qwen3-4B --task gsm8k --latent_steps 10 --latent_space_realign --max_samples 100
 ```
 
-* **`--prompt`** ∈ {`sequential`, `hierarchical`}
+- **`--prompt`** ∈ {`sequential`, `hierarchical`}
   Prompt structure for agent collaboration.
 
 ## 🔬 KNN Cache Filtering (Experimental)
@@ -113,19 +115,19 @@ This implementation includes experimental KNN-based filtering of the KV cache to
 
 ### Key KNN Parameters:
 
-* **`--knn_filter`**
+- **`--knn_filter`**
   Enable KNN filtering of the KV cache
 
-* **`--knn_percentage`** (default: 0.8)
+- **`--knn_percentage`** (default: 0.8)
   Percentage of tokens to keep (0.0-1.0). E.g., 0.8 keeps 80% of the cache.
 
-* **`--knn_min_keep`** (default: 5)
+- **`--knn_min_keep`** (default: 5)
   Minimum number of recent tokens to always preserve, regardless of similarity.
 
-* **`--knn_strategy`** ∈ {`top`, `bottom`, `random`} (default: `top`)
-  - **`top`**: Keep most similar tokens (semantic relevance)
-  - **`bottom`**: Keep least similar tokens (diversity baseline)
-  - **`random`**: Keep random tokens (control baseline)
+- **`--knn_strategy`** ∈ {`top`, `bottom`, `random`} (default: `top`)
+  - **`top`**: Keep most similar tokens
+  - **`bottom`**: Keep least similar tokens
+  - **`random`**: Keep random tokens
 
 ### 🧬 KNN Filtering Examples
 
@@ -171,35 +173,6 @@ python run.py \
   --knn_strategy bottom
 ```
 
-#### 4. Random baseline: Keep random 80% of tokens
-
-```bash
-python run.py \
-  --method latent_mas \
-  --model_name Qwen/Qwen3-4B \
-  --task gsm8k \
-  --latent_steps 10 \
-  --max_samples 10 \
-  --knn_filter \
-  --knn_percentage 0.8 \
-  --knn_strategy random
-```
-
-#### 5. Conservative filtering with larger minimum keep
-
-```bash
-python run.py \
-  --method latent_mas \
-  --model_name Qwen/Qwen3-4B \
-  --task gsm8k \
-  --latent_steps 10 \
-  --max_samples 10 \
-  --knn_filter \
-  --knn_percentage 0.9 \
-  --knn_min_keep 10 \
-  --knn_strategy top
-```
-
 #### 6. Full experiment with all features
 
 ```bash
@@ -218,22 +191,6 @@ python run.py \
   --temperature 0.6 \
   --seed 42
 ```
-
-### 🔍 Understanding KNN Strategies
-
-| Strategy | What it keeps | Use case |
-|----------|--------------|----------|
-| `top` (default) | Most semantically similar tokens to current query | Main approach - maximize relevance |
-| `bottom` | Least similar tokens (diverse/orthogonal context) | Test if diversity > similarity |
-| `random` | Random selection of tokens | Control for cache size reduction effect |
-
-### 💡 KNN Filtering Tips
-
-1. **Start with default settings** (`--knn_percentage 0.8 --knn_strategy top`)
-2. **Experiment with percentage**: Try 0.5, 0.7, 0.8, 0.9 to find the sweet spot
-3. **Use `random` strategy** as a baseline to validate that similarity-based selection matters
-4. **Adjust `knn_min_keep`** based on your latent_steps (e.g., 5-10 for most cases)
-5. **Monitor accuracy vs memory tradeoff** - lower percentages save more memory but may hurt accuracy
 
 ## 📚 Citation
 

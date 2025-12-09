@@ -7,6 +7,9 @@ from prompts import build_agent_messages_hierarchical_text_mas, build_agent_mess
 from utils import extract_gsm8k_answer, normalize_answer, extract_markdown_python_block, run_with_timeout
 import argparse
 import pdb
+import numpy as np
+import os
+import torch
 
 class TextMASMethod:
     def __init__(
@@ -29,7 +32,35 @@ class TextMASMethod:
         self.args = args
         self.method_name = "text_mas"
         self.task = getattr(args, "task", "gsm8k")
-        
+
+        # Embedding saving parameters
+        self.save_embeddings = bool(getattr(args, "save_embeddings", False)) if args else False
+        self.embeddings_data = []  # Store embeddings for saving
+        self.problem_counter = 0  # Track total problems processed across all batches
+
+    def _save_embeddings_to_file(self, embeddings_dict: Dict, problem_idx: int, method_name: str):
+        """
+        Save embeddings to a pickle file for later analysis.
+
+        Args:
+            embeddings_dict: Dictionary containing embeddings and metadata
+            problem_idx: Problem number
+            method_name: Method name (text_mas)
+        """
+        import pickle
+
+        # Create embeddings directory if it doesn't exist
+        os.makedirs("embeddings", exist_ok=True)
+
+        # Create filename
+        filename = f"embeddings/{method_name}_problem{problem_idx}.pkl"
+
+        # Save using pickle to preserve structure
+        with open(filename, 'wb') as f:
+            pickle.dump(embeddings_dict, f)
+
+        print(f"[Embeddings saved: {filename}]")
+
     def run_batch(self, items: List[Dict]) -> List[Dict]:
         if len(items) > self.generate_bs:
             raise ValueError("Batch size exceeds configured generate_bs")
@@ -39,6 +70,10 @@ class TextMASMethod:
         history_contexts = ["" for _ in range(batch_size)]
         agent_traces: List[List[Dict]] = [[] for _ in range(batch_size)]
         final_texts = ["" for _ in range(batch_size)]
+
+        # Initialize embeddings storage for each problem in batch
+        if self.save_embeddings:
+            embeddings_per_problem: List[List[Dict]] = [[] for _ in range(batch_size)]
 
         for agent in self.agents:
 
@@ -69,13 +104,35 @@ class TextMASMethod:
                 batch_messages, add_generation_prompt=True
             )
 
-            generated_texts, _ = self.model.generate_text_batch(
+            # Save input embeddings if requested
+            if self.save_embeddings:
+                with torch.no_grad():
+                    input_embeds = self.model.model.get_input_embeddings()(input_ids)
+                    # Average across sequence for a summary representation
+                    input_hidden = input_embeds.mean(dim=1)  # [batch, hidden_dim]
+
+            generated_texts, past_kv = self.model.generate_text_batch(
                 input_ids,
                 attention_mask,
                 max_new_tokens=self.max_new_tokens_each,
                 temperature=self.temperature,
                 top_p=self.top_p,
             )
+
+            # Save output embeddings if requested (for each problem in batch)
+            if self.save_embeddings and past_kv is not None:
+                with torch.no_grad():
+                    # Extract final hidden state from past_kv (approximation)
+                    # We'll use the input hidden as proxy since text_mas doesn't expose hidden states
+                    # Convert to float32 first to avoid BFloat16 numpy conversion issues
+                    for idx in range(batch_size):
+                        embeddings_entry = {
+                            'agent_name': agent.name,
+                            'agent_role': agent.role,
+                            'input_hidden': input_hidden[idx].to(torch.float32).cpu().numpy(),  # [hidden_dim]
+                            'generated_text': generated_texts[idx],  # Store the actual generated text
+                        }
+                        embeddings_per_problem[idx].append(embeddings_entry)
 
             agent_name_map_for_prompt_hierarchical = {
                 "Planner": "Math Agent",
@@ -142,6 +199,17 @@ class TextMASMethod:
                     "correct": ok,
                 }
             )
+
+            # Save embeddings for this problem (using global counter)
+            if self.save_embeddings and embeddings_per_problem[idx]:
+                self.problem_counter += 1
+                embeddings_dict = {
+                    'method': 'text_mas',
+                    'question': item["question"],
+                    'agents': embeddings_per_problem[idx],
+                }
+                self._save_embeddings_to_file(embeddings_dict, self.problem_counter, 'text_mas')
+
         return results
 
     def run_item(self, item: Dict) -> Dict:

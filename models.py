@@ -226,6 +226,7 @@ class ModelWrapper:
         *,
         latent_steps: int,
         past_key_values: Optional[Tuple] = None,
+        return_hidden_states: bool = False,
     ) -> Tuple:
         if input_ids.dim() != 2:
             raise ValueError("input_ids must be 2D with shape [batch, seq_len]")
@@ -292,5 +293,11 @@ class ModelWrapper:
             past = outputs.past_key_values
             last_hidden = outputs.hidden_states[-1][:, -1, :]
 
+        if return_hidden_states:
+            return past, {
+                'input_hidden': e_t,  # Initial hidden state from input
+                'latent_vectors': latent_vecs_all,  # All latent vectors including initial
+                'final_hidden': last_hidden,  # Final hidden state after latent steps
+            }
         return past
 

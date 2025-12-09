@@ -62,6 +62,11 @@ class LatentMASMethod:
         self.show_heatmaps_singlelayer = bool(getattr(args, "show_heatmaps_singlelayer", False)) if args else False
         self.heatmap_data = []  # Store data for heatmap generation
 
+        # Embedding saving parameters
+        self.save_embeddings = bool(getattr(args, "save_embeddings", False)) if args else False
+        self.embeddings_data = []  # Store embeddings for saving
+        self.problem_counter = 0  # Track total problems processed across all batches
+
         if self.latent_only:
             self.sequential_info_only = True
 
@@ -495,6 +500,29 @@ class LatentMASMethod:
 
         print(f"[Single-layer heatmap saved: {filename}]")
 
+    def _save_embeddings_to_file(self, embeddings_dict: Dict, problem_idx: int, method_name: str):
+        """
+        Save embeddings to a numpy file for later analysis.
+
+        Args:
+            embeddings_dict: Dictionary containing embeddings and metadata
+            problem_idx: Problem number
+            method_name: Method name (latent_mas or text_mas)
+        """
+        import pickle
+
+        # Create embeddings directory if it doesn't exist
+        os.makedirs("embeddings", exist_ok=True)
+
+        # Create filename
+        filename = f"embeddings/{method_name}_problem{problem_idx}.pkl"
+
+        # Save using pickle to preserve structure
+        with open(filename, 'wb') as f:
+            pickle.dump(embeddings_dict, f)
+
+        print(f"[Embeddings saved: {filename}]")
+
     @torch.no_grad()
     def run_batch(self, items: List[Dict]) -> List[Dict]:
         if len(items) > self.generate_bs:
@@ -507,6 +535,10 @@ class LatentMASMethod:
 
         # Track previous agent for heatmap transitions
         prev_agent_role = None
+
+        # Initialize embeddings storage for each problem in batch
+        if self.save_embeddings:
+            embeddings_per_problem: List[List[Dict]] = [[] for _ in range(batch_size)]
 
         for agent in self.agents:
 
@@ -589,12 +621,36 @@ class LatentMASMethod:
                                 # Save single-layer heatmap
                                 self._save_heatmap_singlelayer(similarity_vector, transition_name, problem_idx)
 
-                past_kv = self.model.generate_latent_batch(
-                    wrapped_ids,
-                    attention_mask=wrapped_mask,
-                    latent_steps=self.latent_steps,
-                    past_key_values=past_kv,
-                )
+                # Save embeddings if requested
+                if self.save_embeddings:
+                    result = self.model.generate_latent_batch(
+                        wrapped_ids,
+                        attention_mask=wrapped_mask,
+                        latent_steps=self.latent_steps,
+                        past_key_values=past_kv,
+                        return_hidden_states=True,
+                    )
+                    past_kv, hidden_states_dict = result
+
+                    # Store embeddings for each problem in the batch
+                    # Convert to float32 first to avoid BFloat16 numpy conversion issues
+                    for idx in range(batch_size):
+                        embeddings_entry = {
+                            'agent_name': agent.name,
+                            'agent_role': agent.role,
+                            'input_hidden': hidden_states_dict['input_hidden'][idx].to(torch.float32).cpu().numpy(),  # [hidden_dim]
+                            'latent_vectors': [lv[idx].to(torch.float32).cpu().numpy() for lv in hidden_states_dict['latent_vectors']],  # List of [hidden_dim]
+                            'final_hidden': hidden_states_dict['final_hidden'][idx].to(torch.float32).cpu().numpy(),  # [hidden_dim]
+                        }
+                        embeddings_per_problem[idx].append(embeddings_entry)
+                else:
+                    past_kv = self.model.generate_latent_batch(
+                        wrapped_ids,
+                        attention_mask=wrapped_mask,
+                        latent_steps=self.latent_steps,
+                        past_key_values=past_kv,
+                    )
+
                 if self.sequential_info_only or self.latent_only:
                     new_past_len = _past_length(past_kv)
                     tokens_added = new_past_len - prev_past_len
@@ -721,6 +777,18 @@ class LatentMASMethod:
                     "correct": ok,
                 }
             )
+
+            # Save embeddings for this problem (using global counter)
+            if self.save_embeddings and embeddings_per_problem[idx]:
+                self.problem_counter += 1
+                embeddings_dict = {
+                    'method': 'latent_mas',
+                    'question': item["question"],
+                    'agents': embeddings_per_problem[idx],
+                    'latent_steps': self.latent_steps,
+                }
+                self._save_embeddings_to_file(embeddings_dict, self.problem_counter, 'latent_mas')
+
         return results
 
     def run_item(self, item: Dict) -> Dict:

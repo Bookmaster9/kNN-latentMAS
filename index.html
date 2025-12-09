@@ -1,0 +1,703 @@
+<html>
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+    <link rel="shortcut icon" href="images/icon.ico" />
+    <style type="text/css">
+      body {
+      	background-color: #f5f9ff;
+      }
+
+      /* Hide both math displays initially, will display based on JS detection */
+       .mathjax-mobile, .mathml-non-mobile { display: none; }
+
+       /* Show the MathML content by default on non-mobile devices */
+       .show-mathml .mathml-non-mobile { display: block; }
+       .show-mathjax .mathjax-mobile { display: block; }
+
+      .content-margin-container {
+      	display: flex;
+      	width: 100%; /* Ensure the container is full width */
+      	justify-content: left; /* Horizontally centers the children in the container */
+      	align-items: center;  /* Vertically centers the children in the container */
+      }
+      .main-content-block {
+      	width: 70%; /* Change this percentage as needed */
+         max-width: 1100px; /* Optional: Maximum width */
+      	background-color: #fff;
+      	border-left: 1px solid #DDD;
+      	border-right: 1px solid #DDD;
+      	padding: 8px 8px 8px 8px;
+      	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;#"Avenir";
+      }
+      .margin-left-block {
+      		font-size: 14px;
+      		width: 15%; /* Change this percentage as needed */
+      		max-width: 130px; /* Optional: Maximum width */
+      		position: relative;
+      		margin-left: 10px;
+      		text-align: left;
+      		font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;#"Avenir";
+      		padding: 5px;
+      }
+      .margin-right-block {
+      		font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;#"Avenir";
+      		font-size: 14px;
+      		width: 25%; /* Change this percentage as needed */
+      		max-width: 256px; /* Optional: Maximum width */
+      		position: relative;
+      		text-align: left;
+      		padding: 10px;  /* Optional: Adds padding inside the caption */
+      }
+
+      img {
+      		max-width: 100%; /* Make sure it fits inside the container */
+      		height: auto;
+      		display: block;
+      		margin: auto;
+      }
+      .my-video {
+      		max-width: 100%; /* Make sure it fits inside the container */
+      		height: auto;
+      		display: block;
+      		margin: auto;
+      }
+      /* Hide both video displays initially, will display based on JS detection */
+       .vid-mobile, .vid-non-mobile { display: none; }
+
+       /* Show the video content by default on non-mobile devices */
+       .show-vid-mobile .vid-mobile { display: block; }
+       .show-vid-non-mobile .vid-non-mobile { display: block; }
+
+      a:link,a:visited
+      {
+      	color: #0e7862; /*#1367a7;*/
+      	text-decoration: none;
+      }
+      a:hover {
+      	color: #24b597; /*#208799;*/
+      }
+
+      h1 {
+      	font-size: 18px;
+      	margin-top: 4px;
+      	margin-bottom: 10px;
+      }
+
+      table.header {
+         font-weight: 300;
+         font-size: 17px;
+         flex-grow: 1;
+      	width: 70%;
+         max-width: calc(100% - 290px); /* Adjust according to the width of .paper-code-tab */
+      }
+      table td, table td * {
+          vertical-align: middle;
+          position: relative;
+      }
+      table.paper-code-tab {
+          flex-shrink: 0;
+          margin-left: 8px;
+          margin-top: 8px;
+          padding: 0px 0px 0px 8px;
+          width: 290px;
+          height: 150px;
+      }
+
+      .layered-paper { /* modified from: http://css-tricks.com/snippets/css/layered-paper/ */
+      	box-shadow:
+      	        0px 0px 1px 1px rgba(0,0,0,0.35), /* The top layer shadow */
+      	        5px 5px 0 0px #fff, /* The second layer */
+      	        5px 5px 1px 1px rgba(0,0,0,0.35), /* The second layer shadow */
+      	        10px 10px 0 0px #fff, /* The third layer */
+      	        10px 10px 1px 1px rgba(0,0,0,0.35); /* The third layer shadow */
+      	margin-top: 5px;
+      	margin-left: 10px;
+      	margin-right: 30px;
+      	margin-bottom: 5px;
+      }
+
+      hr {
+         height: 1px; /* Sets the height of the line to 1 pixel */
+         border: none; /* Removes the default border */
+         background-color: #DDD; /* Sets the line color to black */
+       }
+
+      div.hypothesis {
+      	width: 80%;
+      	background-color: #EEE;
+      	border: 1px solid black;
+      	border-radius: 10px;
+      	-moz-border-radius: 10px;
+      	-webkit-border-radius: 10px;
+      	font-family: Courier;
+      	font-size: 18px;
+      	text-align: center;
+      	margin: auto;
+      	padding: 16px 16px 16px 16px;
+      }
+
+      div.citation {
+         font-size: 0.8em;
+         background-color:#fff;
+         padding: 10px;
+      	height: 200px;
+       }
+
+      .fade-in-inline {
+      	position: absolute;
+      	text-align: center;
+      	margin: auto;
+      	-webkit-mask-image: linear-gradient(to right,
+      																		transparent 0%,
+      																		transparent 40%,
+      																		black 50%,
+      																		black 90%,
+      																		transparent 100%);
+      	mask-image: linear-gradient(to right,
+      															transparent 0%,
+      															transparent 40%,
+      															black 50%,
+      															black 90%,
+      															transparent 100%);
+      	-webkit-mask-size: 8000% 100%;
+      	mask-size: 8000% 100%;
+      	animation-name: sweepMask;
+      	animation-duration: 4s;
+      	animation-iteration-count: infinite;
+      	animation-timing-function: linear;
+      	animation-delay: -1s;
+      }
+
+      .fade-in2-inline {
+      		animation-delay: 1s;
+      }
+
+      .inline-div {
+      		position: relative;
+          display: inline-block; /* Makes both the div and paragraph inline-block elements */
+          vertical-align: top; /* Aligns them at the top, you can adjust this to middle, bottom, etc., based on your needs */
+          width: 50px; /* Optional: Adds space between the div and the paragraph */
+      }
+    </style>
+
+    <title>The Platonic Representation Hypothesis</title>
+    <meta
+      property="og:title"
+      content="The Platonic Representation Hypothesis"
+    />
+    <meta charset="UTF-8" />
+  </head>
+
+  <body>
+    <div class="content-margin-container">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+        <table class="header" align="left">
+          <tr>
+            <td colspan="4">
+              <span
+                style="
+                  font-size: 32px;
+                  font-family: 'Courier New', Courier, monospace; /* Adds fallbacks */
+                "
+                >Efficient Latent Communication in Multi-Agent Systems</span
+              >
+            </td>
+          </tr>
+          <tr>
+            <td align="left">
+              <span style="font-size: 17px"
+                ><a href="your_website">Lawrence Liu</a></span
+              >
+            </td>
+          </tr>
+
+          <tr>
+            <td colspan="4" align="left">
+              <span style="font-size: 18px">Final project for 6.7960, MIT</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div class="margin-right-block"></div>
+    </div>
+
+    <div class="content-margin-container" id="intro">
+      <div class="margin-left-block">
+        <!-- table of contents here -->
+        <div style="position: fixed; max-width: inherit; top: max(20%, 120px)">
+          <b style="font-size: 16px">Outline</b><br /><br />
+          <a href="#summary">Summary</a><br /><br />
+          <a href="#intro">Introduction</a><br /><br />
+          <a href="#methodology">Methodology</a><br /><br />
+          <a href="#results">Results</a><br /><br />
+          <a href="#discussion">Discussion</a><br /><br />
+        </div>
+      </div>
+      <div class="main-content-block">
+      </div>
+      <div class="margin-right-block"></div>
+    </div>
+
+    <div class="content-margin-container" id="summary">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+        <h1>Summary</h1>
+        Multi agent systems (MAS) typically communicate through text, forcing the extra step of decoding latent representations into tokens before passing to the next agent. The LatentMAS framework, proposed by Zhou et al. 2025 <a href="#ref_1">[1]</a>, engineers direct sharing of the transformer's key value (KV) caches, providing significant speed ups, accuracy gains, and up to 80% token usage. However, this framework introduces a new challenge - KV caches grow linearly in the number of agents in the system. This work explores the k nearest neighbor retrieval over cached keys from the Memorizing Transformers paper (Wu et al., 2022) <a href="#ref_5">[5]</a> as a potential mechanism to limit KV size. In the end, we are able to trim the KV cache memory by 60% and speedup answer generation by 29% while maintaining near full LatentMAS accuracy. We discuss the full process of experimentation and provide intuition for our results. Ultimately, these findings suggest that latent communication contains structured layer-dependent information that can be selectively compressed without significantly compromising performance, providing an avenue for further development of efficient latent MAS design.
+      </div>
+      <div class="margin-right-block">
+        This work achieves 60% memory reduction with minimal accuracy loss.
+      </div>
+    </div>
+
+    <div class="content-margin-container" id="intro">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+        <h1>Introduction</h1>
+        The "complaint tablet to Ea-nāṣir" is considered to be the oldest
+        written complaint, delivered from a customer to a merchant in 1750 BCE
+        <a href="#ref_4">[4]</a>. Nearly 4000 years later, humans and machines
+        are still communicating through text; the fact that you are learning
+        through reading this blog is a prime example. Even in the realm of multi
+        agent systems (MAS), systems of AI agents that work together on
+        problems, recent research and innovations still utilize tokens (short
+        pieces of text) as the primary form of communication between one machine
+        and another <a href="#ref_1">[1]</a><a href="#ref_2">[2]</a
+        ><a href="#ref_3">[3]</a>. Research is often focused on agent behavior
+        and structure, with far less attention paid to the underlying mode of
+        communication between agents.<br /><br />
+
+        The LatentMAS framework introduced in Zhou et al. 2025
+        <a href="#ref_1">[1]</a> proposes an alternative means of communication
+        between agents in MAS. Instead of token level communication, the agents
+        interact by directly sharing activations - stored and transferred
+        through KV caches. Without the need to map the final activations to the
+        constrained text space, the design can achieve lossless information
+        exchange while saving the decoding process entirely. The entire process
+        involves no extra training, allowing it to sit on top of theoretically
+        any LLM. Compared to a baseline MAS on common benchmarks, this process
+        can achieve 4x speedups and 80% reductions in token usage while
+        maintaining, and often increasing, accuracy on all benchmarks. There is
+        clearly high expressive power in the latent states.<br /><br />
+
+        While the performance is certainly promising, the authors did not
+        address a potentially important issue: as more agents are added, in
+        sequence or parallel, there is a linearly increasing demand for memory
+        to store the KV caches. These caches grow with each step, increasing
+        memory demands and potentially degrading performance in resource
+        constrained environments. Interestingly, however, there was a
+        conceptually parallel paper that addressed memory efficiency proposed 3
+        years earlier in the "Memorizing Transformers" framework
+        <a href="#ref_5">[5]</a>. The method gives transformers the ability to
+        memorize information by adding a non-differentiable external memory that
+        stores KV representations. The information is then retrieved through an
+        efficient approximate kNN search, enabling scalable memory usage and
+        long-context performance.<br /><br />
+
+        Bridging these two paradigms may give a natural answer to the issue of
+        memory management in the LatentMAS framework. Specifically, might
+        kNN-based retrieval offer a principled method for trimming LatentMAS's
+        KV cache, preserving only the most relevant information? This blog
+        investigates this intersection, integrating kNN memory lookup into the
+        latent collaboration framework with the goal of significantly reducing
+        memory and computational overhead while preserving accuracy.
+      </div>
+      <div class="margin-right-block"></div>
+    </div>
+
+    <div class="content-margin-container" id="methodology">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+        <h1>Methodology</h1>
+
+        <b>Theoretical Framework</b><br /><br />
+
+        This section will first aim to summarize the architecture of the
+        LatentMAS system. Then we will discuss the novel kNN process implemented
+        on top of the LatentMAS system.<br /><br />
+      </div>
+      <div class="margin-right-block"></div>
+    </div>
+
+    <div class="content-margin-container">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+        <img src="./images/Fig 1.png" />
+      </div>
+      <div class="margin-right-block">Figure 1: Theoretical framework diagram</div>
+    </div>
+
+    <div class="content-margin-container">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+
+        In a traditional transformer, let <i>f<sub>θ</sub>(·)</i> represent the
+        function the transformer applies to the inputs, parameterized by
+        <i>θ</i>. For a given input <i>X</i> = (<i>x</i><sub>1</sub>, <i>x</i
+        ><sub>2</sub>, ..., <i>x<sub>a</sub></i
+        >), the model first encodes each of the input tokens into
+        <i
+          >ℝ<sup>d<sub>h</sub></sup></i
+        >, where <i>d<sub>h</sub></i> is the model's hidden dimension. Let's
+        denote the resulting embedded input as <i>E</i> = (<i>e</i><sub>1</sub>,
+        <i>e</i><sub>2</sub>, ..., <i>e<sub>a</sub></i
+        >). After passing <i>E</i> through <i>f<sub>θ</sub>(·)</i>'s
+        <i>L</i> hidden layers, we obtain a sequence of hidden states <i>H</i
+        ><sub>1</sub> = (<i>h</i><sub>1</sub>, <i>h</i><sub>2</sub>, ...,
+        <i>h<sub>a</sub></i
+        >) with each <i>h<sub>i</sub></i> ∈
+        <i
+          >ℝ<sup>d<sub>h</sub></sup></i
+        >. To determine the next token,<br /><br />
+
+        <center>
+          <i
+            >f<sub>θ</sub>(x<sub>a+1</sub>|x) =
+            softmax(h<sub>a</sub>W<sub>out</sub>)</i
+          >
+        </center>
+        <br />
+
+        where <i>W<sub>out</sub></i> is the matrix mapping
+        <i>d<sub>h</sub></i> to the vocabulary space.<br /><br />
+
+        In the LatentMAS method, <i>X</i> is still encoded and <i>H</i> is
+        generated in full. However, instead of using <i>h<sub>a</sub></i> to
+        generate <i>x<sub>a+1</sub></i
+        >, <i>h<sub>a</sub></i> ∈
+        <i
+          >ℝ<sup>d<sub>h</sub></sup></i
+        >
+        is directly fed into the model as if it was an encoded input token. This
+        generates <i>h<sub>a+1</sub></i
+        >, which can be fed back into the model again. This autoregressive
+        process is repeated for a specific <i>p</i> "latent steps" producing
+        <i>H</i><sub>2</sub> = (<i>h<sub>a+1</sub></i
+        >, <i>h<sub>a+2</sub></i
+        >, ..., <i>h<sub>a+p</sub></i
+        >). <i>H</i><sub>2</sub> can be thought of as the latent hidden thoughts
+        of the model.<br /><br />
+      </div>
+      <div class="margin-right-block"></div>
+    </div>
+
+    <div class="content-margin-container">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+        <img src="./images/Fig 2.png" />
+      </div>
+      <div class="margin-right-block">Figure 2: Latent hidden thoughts generation</div>
+    </div>
+
+    <div class="content-margin-container">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+
+        Now let us treat the aforementioned process as a single agent
+        <i>A<sub>i</sub></i> in a series of agents <i>A</i><sub>1</sub>, <i>A</i
+        ><sub>2</sub>, ..., <i>A<sub>d</sub></i
+        >. This agent could have been tasked with generating a plan, critiquing
+        the plan, or refining the plan. Regardless of its role, the agent's
+        <i>H</i><sub>2</sub> hidden thoughts contain valuable information that
+        can be used by the next agent. In more traditional text based MAS, the
+        text output from <i>A<sub>i</sub></i> would be included in the input
+        <i>X</i> of <i>A<sub>i+1</sub></i
+        >. Working in the latent hidden representation state, latent MAS
+        prepends the key and value caches from <i>A<sub>i</sub></i> into
+        <i>A<sub>i+1</sub></i
+        >. In more formal terms, we have a latent hidden KV memory of<br /><br />
+
+        <center>
+          <i
+            >S<sub>i</sub> = {(K<sup>l</sup><sub>A<sub>i</sub></sub
+            >, V<sup>l</sup><sub>A<sub>i</sub></sub
+            >) | l ∈ 1, 2, ..., L}</i
+          >
+        </center>
+        <br />
+
+        where<br /><br />
+
+        <center>
+          <i
+            >K<sub>A<sub>i</sub></sub> = [K<sub>A<sub>i</sub>,1</sub>,
+            K<sub>A<sub>i</sub>,2</sub>, ..., K<sub>A<sub>i</sub>,a+p</sub>]</i
+          >
+        </center>
+        <br />
+
+        and<br /><br />
+
+        <center>
+          <i
+            >V<sub>A<sub>i</sub></sub> = [V<sub>A<sub>i</sub>,1</sub>,
+            V<sub>A<sub>i</sub>,2</sub>, ..., V<sub>A<sub>i</sub>,a+p</sub>]</i
+          >
+        </center>
+        <br />
+
+        The latent hidden memory of <i>A<sub>i</sub></i> contains KV caches from
+        all layers, for all tokens from the input text to the end of the latent
+        hidden tokens. Agent <i>A<sub>i</sub></i> gives agent
+        <i>A<sub>i+1</sub></i> the entirety of <i>S</i> by prepending the key
+        and value caches to respective layers in <i>A<sub>i+1</sub></i
+        >. In a series of many agents, this process is repeated for all
+        <i>i</i> until the last agent, stacking KV caches through each layer.
+        For benchmark verification and to ensure it is human interpretable, the
+        final layer decodes directly to text instead of a latent hidden state.
+        This is done with full latent context from all agents that came before
+        it.<br /><br />
+
+        As we can see, Latent MAS transfers the KV cache of all layers and all
+        tokens from agent to agent. We introduce k-nearest neighbors, inspired
+        by the Memorizing Transformers paper, to try to limit the size of the KV
+        cache. After generating all latent steps in <i>A<sub>i</sub></i
+        >, before transferring the KV cache to <i>A<sub>i+1</sub></i
+        >, we add a kNN filtering step. The input query text of
+        <i>A<sub>i+1</sub></i> is embedded and averaged across all input tokens
+        to produce a single vector <i>v</i> ∈ <i>d<sub>h</sub></i
+        >. We then calculate the cosine similarity between each key in the
+        middlemost layer of <i>A<sub>i</sub></i> and <i>v</i>. These keys, and
+        the corresponding values, are preserved in their original order and
+        layer-wise prepended to <i>A<sub>i+1</sub></i
+        >'s KV cache.<br /><br />
+
+        <b>Implementation</b><br /><br />
+
+        To test the efficacy of kNN based KV cache filtering in Latent MAS, we
+        utilize the GPQA-diamond dataset used in the Latent MAS paper
+        <a href="#ref_6">[6]</a>. GPQA-diamond is the most difficult of the GPQA
+        benchmarks. It features 198 graduate-level multiple choice questions
+        written by experts in physics, chemistry, and biology. The dataset
+        requires strong cross disciplinary reasoning, multi step reasoning, and
+        depth of knowledge in the sciences. While the original Latent MAS paper
+        tests on multiple other simpler benchmarks, a difficult reasoning
+        benchmark provides the clearest feedback on if a strategy is effective;
+        the expectation is that small mistakes will lead to wrong answers,
+        requiring the model and the KV cache pruning strategy to be prudent.<br /><br />
+
+        There were a number of factors we kept consistent as controls from the
+        original Latent MAS paper. Firstly, we kept the sequential MAS agent
+        role delegation the same. The planner agent generates a plan, a critic
+        agent critiques the plan and generates feedback, a refiner refines the
+        plan based on the critic's comments, and finally the solver takes the
+        updated plan and produces a final result. This was a framework first
+        introduced in Zhang et al. 2024 <a href="#ref_7">[7]</a>. Next, we ran
+        the same baseline models as a benchmark:<br /><br />
+
+        <ol>
+          <li>
+            <b>"Baseline"</b>: Qwen3-4B model evaluating the problem solo, with
+            no sequential MAS
+          </li>
+          <li>
+            <b>"TextMAS"</b>: Sequential system of four Qwen3-4B models playing
+            the roles of planner, critic, refiner, and solver. Communication
+            from one model to another is done through text.
+          </li>
+          <li>
+            <b>"LatentMAS"</b>: Standard LatentMAS system as described in the
+            theoretical framework section.
+          </li>
+        </ol>
+        <br />
+
+        There were also a number of hyperparameters kept constant across all
+        runs of the baselines and the novel kNN pruned LatentMAS: max samples =
+        100, max new tokens = 8096, latent steps = 10, temperature = 0.6, top-p
+        = 0.95, and agent specific prompts. The computation was done on NVIDIA
+        4090 GPUs with the Huggingface instance of the Qwen3-4B model.<br /><br />
+
+        For the kNN, while traditional kNN implies a constant "k" neighbors
+        chosen, the variability in input text length makes it difficult to
+        choose a constant k for all agents. The final implementation takes a
+        percentage kNN, where the top k% most similar KV pairs were selected.
+      </div>
+      <div class="margin-right-block">Consistent hyperparameters:</div>
+    </div>
+
+    <div class="content-margin-container" id="results">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+        <h1>Results</h1>
+
+        <b>Initial Results</b><br /><br />
+
+        Graph 1 reports the accuracy and time per response for each of the models tested. The Baseline model sits at 21% while TextMAS has the highest accuracy at 46%. However, TextMAS does take significantly longer due to the inference needed to generate text between each agent. The LatentMAS model sits at 44% accuracy. For the kNN pruned LatentMAS models, the top 90% of layers model had the best accuracy of 45%, performing better than the baseline and ended up just shy of the TextMAS model. However, the rest of the kNN-LatentMAS models did not fare as well. Accuracy falls off very quickly and falls under the expected random guess accuracy of 25% at the k = 80% mark. Within the kNN-LatentMAS, it is interesting to note that time per question initially falls off quickly as pruned percentage increases, but the time per question then increases near k = 50%. Checking the logs, one potential explanation could be that for "middle" k values (80%, 70%), the final solver agent thinks minimally before answering due to some perceived confidence. As the k value continues to decrease however, the model starts to ramble out incoherent thoughts, taking a long time to decide it is done and ending with the wrong answer. Based off of these initial experiments, it seems like cutting large amounts of KV cache is not possible without significant losses in accuracy.<br /><br />
+      </div>
+      <div class="margin-right-block"></div>
+    </div>
+
+    <div class="content-margin-container">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+        <img src="./images/Fig 3.png" />
+      </div>
+      <div class="margin-right-block">Figure 3: Initial results showing accuracy vs k%</div>
+    </div>
+
+    <div class="content-margin-container">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+
+        <b>Bottom and Random K Ablation Tests</b><br /><br />
+
+        While top k is what was suggested by Memorizing Transformers (Wu et al 2022) <a href="#ref_5">[5]</a>, it is not the only choice. In fact, without baselines within the kNN-LatentMAS model, the accuracy numbers don't mean much at all. We repeat the experiment of evaluating the kNN-LatentMAS model, this time introducing two new controls:<br /><br />
+
+        <ol>
+          <li><b>"Bottom k"</b>: k% of KV pairs that are the LEAST similar to the query vector</li>
+          <li><b>"Random k"</b>: k% of KV pairs selected at random</li>
+        </ol>
+        <br />
+
+        Looking at Graph 2, the results are surprising. The Bottom model actually outperforms the Top model at k = 90% by 2% while the random model does not do significantly worse. As the k% decreases, the Bottom and Random model actually outperform the top model. Furthermore, the Bottom model always outperforms the Top and Random model at every level of k. This may seem counterintuitive at first, but in fact may stem from a useful observation. If we look at the prompts that the LatentMAS paper utilized, they were all short formal prompts that first gave context then asked the agent to do something specific. Given that they all had similar formatting tone and content, it may be the case that KVs that are the least similar with the query text have the most "novel" information. In the Top-k model, we may have been inadvertently selecting for KV pairs that were mostly about the prompt, cutting out some of the more useful latent space content.<br /><br />
+      </div>
+      <div class="margin-right-block"></div>
+    </div>
+
+    <div class="content-margin-container">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+        <img src="./images/Fig 4.png" />
+      </div>
+      <div class="margin-right-block">Figure 4: Bottom-k vs Top-k vs Random-k ablation comparison</div>
+    </div>
+
+    <div class="content-margin-container">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+
+        <b>Latent Space Visualization</b><br /><br />
+
+        Let's look at two particular visualizations of the latent space. Firstly, these three charts below show the cosine similarity between a subsequent agent's input text embeddings and the prior agent's KV cache. Each row represents a layer in the transformer, and each column is a cached key. Naturally, as the KV caches are additively transferred from one model to the next, the number of cached keys increases. In this particular case, the planner passes 201 keys to the critic, the critic adds 242 new keys and passes 443 keys to the refiner, and the refiner adds 238 new keys and makes the final pass to the solver. It is also interesting to see that, in general, the similarity between input text embedding and cached key varies more depending on the layer than within any particular layer. Most layers are either almost all positive cosine similarity (green) or all negative cosine similarity (orange). There are very few layers that contain both. Additionally, although a weaker trend, there is generally a higher concentration of orange in the top right of each plot (higher layer of the transformer, more recent key cache). This is logical as the higher layers in transformers deviate away from the universal, general purpose features present in low layers and instead move towards task-specific specialization. The more recent caches also likely move beyond reasoning with the prompt and instead are reasoning. Combining this intuition may explain why the Bottom model outperformed Top and Random. The Bottom kNN-LatentMAS was likely capturing the most novel, synthesized information that deviated furthest from the input text.<br /><br />
+      </div>
+      <div class="margin-right-block"></div>
+    </div>
+
+    <div class="content-margin-container">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+        <img src="./images/Fig 5.png" />
+      </div>
+      <div class="margin-right-block">Figure 5: Cosine similarity heatmaps across all layers</div>
+    </div>
+
+    <div class="content-margin-container">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+
+        We can also take a deeper dive and investigate the heatmap of cosine similarities in the exact layer the model utilized rather than all layers. To elucidate the differences in similarity, we min-max normalize the data. There are two notable observations we can instantly derive from these plots. Firstly, the key caches at the end of each sequence tend to have low similarity. These are specifically the key caches associated with the newly generated hidden latent thoughts. Secondly, most apparent in the final pass plot of the refiner to the judger, there are low similarity regions that correspond with the hidden latent thoughts generated at the end of each of the agent's reasoning. The Top kNN-LatentMAS is unlikely to get to these cached KVs associated with the hidden latent thoughts because there are so many high similarity text input tokens. Bottom kNN-LatentMAS ends up prioritizing the hidden latent thoughts.<br /><br />
+      </div>
+      <div class="margin-right-block"></div>
+    </div>
+
+    <div class="content-margin-container">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+        <img src="./images/Fig 6.png" />
+      </div>
+      <div class="margin-right-block">Figure 6: Min-max normalized similarity in the middlemost layer</div>
+    </div>
+
+    <div class="content-margin-container">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+
+        <b>Prompt Engineering Adjustment</b><br /><br />
+
+        As it stands, the prompts of the planner, critic, refiner, and solver do not share any instructions. Given that prompts are embedded and used to calculate similarities with the prior agent's keys, it may be beneficial, given the insights derived from the heatmaps, to maximize similarity between prompts. This should theoretically maximize the relative difference between prompt focused key caches and novel reasoning caches. Applying bottom kNN to these new key caches should retrieve a subset of KV caches that are richer in reasoning and novel ideas.<br /><br />
+
+        We test this by stacking the input prompts in the same fashion as the KV caches. The entire prompt of the planner is included in the prompt of the critic, the entire prompt of the critic included in the prompt of the refiner, and the entire prompt of the refiner included in the prompt of the solver. Again, we test with the same hyperparameters and vary the percentage k used. Looking at the figure below, we see that performance on the Top and Random kNN-LatentMAS models are about the same across all k's. However, there is a highly significant preservation of accuracy through k = 60% in the Bottom model. More specifically, the accuracy at k = 60% in the Bottom kNN-LatentMAS model was 35% with the new prompts while only 11% with the old prompts. Assuming a base accuracy of 42% from the full LatentMAS model over <i>n</i> = 100 questions, an accuracy of 35% has a p-value of 12%. This is insignificant at a 5% level. The model is able to do this with an average time per question of 86 seconds, which is less than the single model Baseline. Furthermore, the result is obtained utilizing 60% of the memory of the LatentMAS model at a speed 29% faster. This is a very promising development, indicating that latent state pruning can achieve significant efficiency gains at the cost of minimal accuracy changes.
+      </div>
+      <div class="margin-right-block">
+        Stacking prompts increases redundancy, making the novel reasoning KVs more distinct.
+      </div>
+    </div>
+
+    <div class="content-margin-container">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+        <img src="./images/Fig 7.png" />
+      </div>
+      <div class="margin-right-block">Figure 7: Performance with stacked prompts across different k values</div>
+    </div>
+
+    <div class="content-margin-container" id="discussion">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+        <h1>Discussion</h1>
+
+        <b>Limitations and Further Research</b><br /><br />
+
+        Although kNN-based pruning is promising for reducing memory consumption in LatentMAS, there are limitations to the methodology we employed.<br /><br />
+
+        <ol>
+          <li>The pruning mechanism relies on cosine similarity of an <b>average</b> embedding of the input prompt. This collapses the semantic structure of the prompt, removing nuance of the desired task at hand. Future research could explore a more expressive query system like a query set of tokens to provide more reliable relevance signals for KV selection.</li>
+          <li>Currently, the kNN only evaluates keys from the middlemost layer of the transformer when determining similarity. As seen in the figures, the heatmaps suggest strong layer dependent structure, with lower layers encoding general language structure and higher layers encoding more abstract features. An arbitrary middle layer may or may not provide the most reliable signal. A selection process that spans the layer range may provide greater signals as to what is important to keep.</li>
+          <li>We did not vary the baseline model (Qwen3-4B) or the benchmark (GPQA-diamond). It is unclear how these results generalize to easier/harder benchmarks, larger/smaller models, and other reasoning tasks. There is always the possibility of the superiority we saw in the bottom-k strategy with the new prompts to be artifacts of the model, agent roles, or domain. Further research may expand on the model selection and datasets to explore this strategy more comprehensively.</li>
+        </ol>
+        <br />
+
+        <b>Conclusion</b><br /><br />
+
+        Despite the limitations, this research demonstrates that there are nuanced ways to prune the KV cache in latent MAS. Inspired by Memorizing Transformers (Wu et al., 2022) <a href="#ref_5">[5]</a>, we implemented kNN based KV cache pruning to the LatentMAS model to decrease memory usage in the MAS. A straightforward top k selection process performs poorly, losing significant accuracy at k = 80% of the KV cache preserved. However, noticing that bottom kNN-LatentMAS model consistently outperformed the Top and Random models, we showed that the key caches that are the least similar with the text input query are associated with the hidden latent state generations. Designing new prompts to emphasize this difference yielded strong results, maintaining near full LatentMAS accuracy while decreasing memory by 60% and time spent on each problem by 28%. Overall, these results set the foundation for further research in the area of latent communication, emphasizing the importance of understanding what latent hidden states are actually encoding.
+      </div>
+      <div class="margin-right-block">
+        Future work could explore multi-token query representations.
+      </div>
+    </div>
+
+    <div class="content-margin-container">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+        <img src="./images/Fig 8.png" />
+      </div>
+      <div class="margin-right-block">Figure 8: Summary of key findings and future directions</div>
+    </div>
+
+
+    <div class="content-margin-container" id="citations">
+      <div class="margin-left-block"></div>
+      <div class="main-content-block">
+        <div class="citation" id="references" style="height: auto">
+          <br />
+          <span style="font-size: 16px">References:</span><br /><br />
+          <a id="ref_1"></a>[1] Zhou, H., Geng, H., Xue, X., Kang, L., Qin, Y.,
+          Wang, Z., ... & Bai, L. (2025). Reso: A reward-driven self-organizing
+          llm-based multi-agent system for reasoning tasks.
+          <i>arXiv preprint arXiv:2503.02390</i>.<br /><br />
+          <a id="ref_2"></a>[2] Jin, B., Zeng, H., Yue, Z., Yoon, J., Arik, S.,
+          Wang, D., ... & Han, J. (2025). Search-r1: Training llms to reason and
+          leverage search engines with reinforcement learning.
+          <i>arXiv preprint arXiv:2503.09516</i>.<br /><br />
+          <a id="ref_3"></a>[3] Pezeshkpour, P., Kandogan, E., Bhutani, N.,
+          Rahman, S., Mitchell, T., & Hruschka, E. (2024). Reasoning capacity in
+          multi-agent systems: Limitations, challenges and human-centered
+          solutions. <i>arXiv preprint arXiv:2402.01108</i>.<br /><br />
+          <a id="ref_4"></a>[4] Kalinauskas, N. (2015, March 10). At the British
+          Museum, oldest recorded customer-service complaint on display.
+          <i>Yahoo News</i>.
+          <a
+            href="https://ca.news.yahoo.com/blogs/daily-buzz/at-the-british-museum-oldest-recorded-184633671.html"
+            >https://ca.news.yahoo.com/blogs/daily-buzz/at-the-british-museum-oldest-recorded-184633671.html</a
+          ><br /><br />
+          <a id="ref_5"></a>[5] Wu, Y., et al. (2022). Memorizing Transformers.
+          <i>arXiv preprint</i>.<br /><br />
+          <a id="ref_6"></a>[6] Rein, D., Hou, B. L., Stickland, A. C., Petty,
+          J., Pang, R. Y., Dirani, J., ... & Bowman, S. R. (2024, July). Gpqa: A
+          graduate-level google-proof q&a benchmark. In
+          <i>First Conference on Language Modeling</i>.<br /><br />
+          <a id="ref_7"></a>[7] Zhang, Y., Sun, R., Chen, Y., Pfister, T.,
+          Zhang, R., & Arik, S. (2024). Chain of agents: Large language models
+          collaborating on long-context tasks.
+          <i>Advances in Neural Information Processing Systems</i>, 37,
+          132208-132237.<br /><br />
+        </div>
+      </div>
+      <div class="margin-right-block">
+        <!-- margin notes for reference block here -->
+      </div>
+    </div>
+  </body>
+</html>
