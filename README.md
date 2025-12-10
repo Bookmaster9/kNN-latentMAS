@@ -4,6 +4,8 @@
 
 Multi agent systems (MAS) typically communicate through text, forcing the extra step of decoding latent representations into tokens before passing to the next agent. The LatentMAS framework, proposed by Zou et al. 2025 [1], engineers direct sharing of the transformer's key value (KV) caches, providing significant speed ups, accuracy gains, and up to 80% less token usage. However, this framework introduces a new challenge - KV caches grow linearly in the number of agents in the system. This work explores the k nearest neighbor retrieval over cached keys from the Memorizing Transformers paper by Wu et al. 2022 [6] as a potential mechanism to limit KV size. In the end, we are able to trim the KV cache memory by 40% and speedup answer generation by 29% while maintaining near full LatentMAS accuracy. We discuss the full process of experimentation and provide intuition for our results. Ultimately, these findings suggest that latent communication contains structured layer-dependent information that can be selectively compressed without significantly compromising performance, providing an avenue for further development of efficient latent MAS design.
 
+[Read the blog post here for more details](https://bookmaster9.github.io/kNN-latentMAS/)
+
 ## 💡 Introduction
 
 This repository is based on the **LatentMAS** framework ([Zou et al., 2025](https://arxiv.org/abs/2511.20639)), a multi-agent reasoning framework that **moves agent collaboration from token space into the model's latent space**.
